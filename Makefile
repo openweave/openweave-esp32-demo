@@ -28,9 +28,11 @@ log                               \
 lwip                              \
 main                              \
 mbedtls							  \
+micro-ecc						  \
 newlib                            \
 nvs_flash                         \
 partition_table                   \
+pthread							  \
 sdmmc                             \
 soc                               \
 spi_flash                         \
@@ -40,11 +42,9 @@ ulp                               \
 vfs                               \
 wear_levelling                    \
 weave                             \
+weave-platform-esp32			  \
 wpa_supplicant                    \
 xtensa-debug-module               \
-pthread							  \
-weave-platform-esp32			  \
-
 
 include $(IDF_PATH)/make/project.mk
 
