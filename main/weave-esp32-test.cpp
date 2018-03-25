@@ -46,20 +46,63 @@ using namespace nl::Weave;
 
 static const char *TAG = "weave-esp32-test";
 
+void DumpWiFiState()
+{
+    WEAVE_ERROR err;
+    wifi_mode_t wifiMode;
+    wifi_config_t wifi_config;
+    bool autoConnect;
+
+    err = esp_wifi_get_mode(&wifiMode);
+    if (err != ESP_OK)
+    {
+        ESP_LOGE(TAG, "esp_wifi_get_mode return error: %d", err);
+    }
+    else
+    {
+        ESP_LOGI(TAG, "wifiMode is %d", wifiMode);
+    }
+
+    memset(&wifi_config, 0, sizeof(wifi_config));
+    err = esp_wifi_get_config(ESP_IF_WIFI_STA, &wifi_config);
+    if (err != ESP_OK)
+    {
+        ESP_LOGE(TAG, "esp_wifi_get_config return error: %d", err);
+    }
+    else
+    {
+        ESP_LOGI(TAG, "wifi_config.sta.ssid is '%s'", wifi_config.sta.ssid);
+        ESP_LOGI(TAG, "wifi_config.sta.password is '%s'", wifi_config.sta.password);
+    }
+
+    err = esp_wifi_get_auto_connect(&autoConnect);
+    if (err != ESP_OK)
+    {
+        ESP_LOGE(TAG, "esp_wifi_get_auto_connect return error: %d", err);
+    }
+    else
+    {
+        ESP_LOGI(TAG, "autoConnect is '%s'", (autoConnect) ? "true" : "false");
+    }
+}
+
+enum
+{
+    kAliveInterval = 5000
+};
+
 void HandleAliveTimer(System::Layer * aLayer, void * aAppState, System::Error aError)
 {
     WEAVE_ERROR err;
 
     ESP_LOGI(TAG, "Alive");
 
-    err = WeavePlatform::SystemLayer.StartTimer(15000, HandleAliveTimer, NULL);
-    if (err != WEAVE_NO_ERROR) {
+    err = WeavePlatform::SystemLayer.StartTimer(kAliveInterval, HandleAliveTimer, NULL);
+    if (err != WEAVE_NO_ERROR)
+    {
         ESP_LOGE(TAG, "Failed to start timer: %s", ErrorStr(err));
         return;
     }
-
-    bool stationEnabled = ::WeavePlatform::ConnectivityMgr.GetWiFiStationEnabled();
-    ::WeavePlatform::ConnectivityMgr.SetWiFiStationEnabled(!stationEnabled);
 }
 
 extern "C" void app_main()
@@ -79,21 +122,29 @@ extern "C" void app_main()
     {
         wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
         ESP_ERROR_CHECK( esp_wifi_init(&cfg) );
-    }
 
-    {
-        wifi_config_t wifi_config;
-        memset(&wifi_config, 0, sizeof(wifi_config));
-        err = esp_wifi_get_config(ESP_IF_WIFI_STA, &wifi_config);
-        if (err != ESP_OK)
-        {
-            ESP_LOGE(TAG, "esp_wifi_get_config return error: %d", err);
-        }
-        else
-        {
-            ESP_LOGI(TAG, "wifi_config.sta.ssid is '%s'", wifi_config.sta.ssid);
-            ESP_LOGI(TAG, "wifi_config.sta.password is '%s'", wifi_config.sta.password);
-        }
+        ESP_ERROR_CHECK( esp_wifi_set_storage(WIFI_STORAGE_RAM) );
+
+        ESP_LOGI(TAG, "esp_wifi_set_mode(WIFI_MODE_STA)");
+        ESP_ERROR_CHECK( esp_wifi_set_mode(WIFI_MODE_STA) );
+
+        wifi_config_t wifiConfig;
+        memset(&wifiConfig, 0, sizeof(wifiConfig));
+        memcpy(wifiConfig.sta.ssid, EXAMPLE_WIFI_SSID, strlen(EXAMPLE_WIFI_SSID) + 1);
+        memcpy(wifiConfig.sta.password, EXAMPLE_WIFI_PASS, strlen(EXAMPLE_WIFI_PASS) + 1);
+        wifiConfig.sta.scan_method = WIFI_ALL_CHANNEL_SCAN;
+        wifiConfig.sta.sort_method = WIFI_CONNECT_AP_BY_SIGNAL;
+        ESP_LOGI(TAG, "esp_wifi_set_config(ESP_IF_WIFI_STA, &wifiConfig)");
+        ESP_ERROR_CHECK( esp_wifi_set_config(ESP_IF_WIFI_STA, &wifiConfig) );
+
+        ESP_LOGI(TAG, "esp_wifi_set_auto_connect(true)");
+        ESP_ERROR_CHECK( esp_wifi_set_auto_connect(true) );
+
+        ESP_LOGI(TAG, "esp_wifi_set_mode(WIFI_MODE_NULL)");
+        ESP_ERROR_CHECK( esp_wifi_set_mode(WIFI_MODE_NULL) );
+
+        ESP_LOGI(TAG, "esp_wifi_start()");
+        ESP_ERROR_CHECK( esp_wifi_start() );
     }
 
     if (!WeavePlatform::InitWeaveStack())
@@ -101,27 +152,7 @@ extern "C" void app_main()
         return;
     }
 
-    {
-        wifi_config_t wifi_config;
-
-        ESP_ERROR_CHECK( esp_wifi_set_storage(WIFI_STORAGE_RAM) );
-        ESP_LOGI(TAG, "Setting WiFi configuration SSID %s...", wifi_config.sta.ssid);
-        ESP_ERROR_CHECK( esp_wifi_set_mode(WIFI_MODE_STA) );
-
-        memset(&wifi_config, 0, sizeof(wifi_config));
-        memcpy(wifi_config.sta.ssid, EXAMPLE_WIFI_SSID, strlen(EXAMPLE_WIFI_SSID) + 1);
-        wifi_config.sta.ssid[1] = 'F';
-        memcpy(wifi_config.sta.password, EXAMPLE_WIFI_PASS, strlen(EXAMPLE_WIFI_PASS) + 1);
-        wifi_config.sta.scan_method = WIFI_ALL_CHANNEL_SCAN;
-        wifi_config.sta.sort_method = WIFI_CONNECT_AP_BY_SIGNAL;
-        ESP_ERROR_CHECK( esp_wifi_set_config(ESP_IF_WIFI_STA, &wifi_config) );
-
-        ESP_ERROR_CHECK( esp_wifi_set_auto_connect(true) );
-
-        ESP_ERROR_CHECK( esp_wifi_start() );
-    }
-
-    err = WeavePlatform::SystemLayer.StartTimer(15000, HandleAliveTimer, NULL);
+    err = WeavePlatform::SystemLayer.StartTimer(kAliveInterval, HandleAliveTimer, NULL);
     if (err != WEAVE_NO_ERROR) {
         ESP_LOGE(TAG, "Failed to start timer: %s", ErrorStr(err));
         return;
