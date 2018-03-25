@@ -44,66 +44,7 @@ using namespace nl::Weave;
 #define EXAMPLE_WIFI_SSID CONFIG_WIFI_SSID
 #define EXAMPLE_WIFI_PASS CONFIG_WIFI_PASSWORD
 
-#define UDP_PORT CONFIG_EXAMPLE_PORT
-
-#define LISTEN_DEFAULT_IF CONFIG_EXAMPLE_LISTEN_DEFAULT_IF
-
-/* FreeRTOS event group to signal when we are connected & ready to make a request */
-static EventGroupHandle_t wifi_event_group;
-
-/* The event group allows multiple bits for each event,
-   we use two - one for IPv4 "got ip", and
-   one for IPv6 "got ip". */
-const int IPV4_GOTIP_BIT = BIT0;
-const int IPV6_GOTIP_BIT = BIT1;
-
 static const char *TAG = "weave-esp32-test";
-
-static esp_err_t event_handler(void *ctx, system_event_t *event)
-{
-    switch(event->event_id) {
-    case SYSTEM_EVENT_STA_START:
-        esp_wifi_connect();
-        break;
-    case SYSTEM_EVENT_STA_CONNECTED:
-        /* enable ipv6 */
-        tcpip_adapter_create_ip6_linklocal(TCPIP_ADAPTER_IF_STA);
-        break;
-    case SYSTEM_EVENT_STA_GOT_IP:
-        xEventGroupSetBits(wifi_event_group, IPV4_GOTIP_BIT);
-        break;
-    case SYSTEM_EVENT_STA_DISCONNECTED:
-        /* This is a workaround as ESP32 WiFi libs don't currently
-           auto-reassociate. */
-        esp_wifi_connect();
-        xEventGroupClearBits(wifi_event_group, IPV4_GOTIP_BIT);
-        xEventGroupClearBits(wifi_event_group, IPV6_GOTIP_BIT);
-        break;
-    case SYSTEM_EVENT_AP_STA_GOT_IP6:
-        xEventGroupSetBits(wifi_event_group, IPV6_GOTIP_BIT);
-    default:
-        break;
-    }
-    return ESP_OK;
-}
-
-static void initialise_wifi(void)
-{
-    wifi_config_t wifi_config;
-    memcpy(wifi_config.sta.ssid, EXAMPLE_WIFI_SSID, strlen(EXAMPLE_WIFI_SSID) + 1);
-    memcpy(wifi_config.sta.password, EXAMPLE_WIFI_PASS, strlen(EXAMPLE_WIFI_PASS) + 1);
-
-    tcpip_adapter_init();
-    wifi_event_group = xEventGroupCreate();
-    ESP_ERROR_CHECK( esp_event_loop_init(event_handler, NULL) );
-    wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
-    ESP_ERROR_CHECK( esp_wifi_init(&cfg) );
-    ESP_ERROR_CHECK( esp_wifi_set_storage(WIFI_STORAGE_RAM) );
-    ESP_LOGI(TAG, "Setting WiFi configuration SSID %s...", wifi_config.sta.ssid);
-    ESP_ERROR_CHECK( esp_wifi_set_mode(WIFI_MODE_STA) );
-    ESP_ERROR_CHECK( esp_wifi_set_config(ESP_IF_WIFI_STA, &wifi_config) );
-    ESP_ERROR_CHECK( esp_wifi_start() );
-}
 
 void HandleAliveTimer(System::Layer * aLayer, void * aAppState, System::Error aError)
 {
@@ -111,11 +52,14 @@ void HandleAliveTimer(System::Layer * aLayer, void * aAppState, System::Error aE
 
     ESP_LOGI(TAG, "Alive");
 
-    err = WeavePlatform::SystemLayer.StartTimer(5000, HandleAliveTimer, NULL);
+    err = WeavePlatform::SystemLayer.StartTimer(15000, HandleAliveTimer, NULL);
     if (err != WEAVE_NO_ERROR) {
         ESP_LOGE(TAG, "Failed to start timer: %s", ErrorStr(err));
         return;
     }
+
+    bool stationEnabled = ::WeavePlatform::ConnectivityMgr.GetWiFiStationEnabled();
+    ::WeavePlatform::ConnectivityMgr.SetWiFiStationEnabled(!stationEnabled);
 }
 
 extern "C" void app_main()
@@ -128,29 +72,62 @@ extern "C" void app_main()
         return;
     }
 
-    initialise_wifi();
+    tcpip_adapter_init();
 
-    if (!WeavePlatform::InitWeaveStack()) {
+    ESP_ERROR_CHECK( esp_event_loop_init(WeavePlatform::HandleESPSystemEvent, NULL) );
+
+    {
+        wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
+        ESP_ERROR_CHECK( esp_wifi_init(&cfg) );
+    }
+
+    {
+        wifi_config_t wifi_config;
+        memset(&wifi_config, 0, sizeof(wifi_config));
+        err = esp_wifi_get_config(ESP_IF_WIFI_STA, &wifi_config);
+        if (err != ESP_OK)
+        {
+            ESP_LOGE(TAG, "esp_wifi_get_config return error: %d", err);
+        }
+        else
+        {
+            ESP_LOGI(TAG, "wifi_config.sta.ssid is '%s'", wifi_config.sta.ssid);
+            ESP_LOGI(TAG, "wifi_config.sta.password is '%s'", wifi_config.sta.password);
+        }
+    }
+
+    if (!WeavePlatform::InitWeaveStack())
+    {
         return;
     }
 
-    /* Wait for all the IPs we care about to be set
-    */
-    uint32_t bits = 0;
-    bits |= IPV4_GOTIP_BIT;
-    bits |= IPV6_GOTIP_BIT;
+    {
+        wifi_config_t wifi_config;
 
-    ESP_LOGI(TAG, "Waiting for AP connection...");
-    xEventGroupWaitBits(wifi_event_group, bits, false, true, portMAX_DELAY);
-    ESP_LOGI(TAG, "Connected to AP");
+        ESP_ERROR_CHECK( esp_wifi_set_storage(WIFI_STORAGE_RAM) );
+        ESP_LOGI(TAG, "Setting WiFi configuration SSID %s...", wifi_config.sta.ssid);
+        ESP_ERROR_CHECK( esp_wifi_set_mode(WIFI_MODE_STA) );
 
-    err = WeavePlatform::SystemLayer.StartTimer(5000, HandleAliveTimer, NULL);
+        memset(&wifi_config, 0, sizeof(wifi_config));
+        memcpy(wifi_config.sta.ssid, EXAMPLE_WIFI_SSID, strlen(EXAMPLE_WIFI_SSID) + 1);
+        wifi_config.sta.ssid[1] = 'F';
+        memcpy(wifi_config.sta.password, EXAMPLE_WIFI_PASS, strlen(EXAMPLE_WIFI_PASS) + 1);
+        wifi_config.sta.scan_method = WIFI_ALL_CHANNEL_SCAN;
+        wifi_config.sta.sort_method = WIFI_CONNECT_AP_BY_SIGNAL;
+        ESP_ERROR_CHECK( esp_wifi_set_config(ESP_IF_WIFI_STA, &wifi_config) );
+
+        ESP_ERROR_CHECK( esp_wifi_set_auto_connect(true) );
+
+        ESP_ERROR_CHECK( esp_wifi_start() );
+    }
+
+    err = WeavePlatform::SystemLayer.StartTimer(15000, HandleAliveTimer, NULL);
     if (err != WEAVE_NO_ERROR) {
         ESP_LOGE(TAG, "Failed to start timer: %s", ErrorStr(err));
         return;
     }
 
-    WeaveLogError(Support, "Ready");
+    ESP_LOGI(TAG, "Ready");
 
     WeavePlatform::SystemLayer.DispatchEvents();
 }
