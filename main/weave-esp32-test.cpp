@@ -103,6 +103,19 @@ void HandleAliveTimer(System::Layer * aLayer, void * aAppState, System::Error aE
         ESP_LOGE(TAG, "Failed to start timer: %s", ErrorStr(err));
         return;
     }
+
+#if 0
+    if (WeavePlatform::SystemLayer.GetSystemTimeMS() > 15000)
+    {
+        static bool done = false;
+
+        if (!done)
+        {
+            ::WeavePlatform::ConnectivityMgr.DemandStartWiFiAP();
+            done = true;
+        }
+    }
+#endif
 }
 
 extern "C" void app_main()
@@ -151,6 +164,8 @@ extern "C" void app_main()
     {
         return;
     }
+
+    ::WeavePlatform::ConnectivityMgr.SetWiFiAPMode(WeavePlatform::ConnectivityManager::kWiFiAPMode_Enabled);
 
     err = WeavePlatform::SystemLayer.StartTimer(kAliveInterval, HandleAliveTimer, NULL);
     if (err != WEAVE_NO_ERROR) {
