@@ -4,8 +4,8 @@
 #include "esp_log.h"
 #include "nvs_flash.h"
 
-#include <WeavePlatform-ESP32.h>
 #include <Weave/Support/ErrorStr.h>
+#include <WeavePlatform.h>
 
 using namespace ::nl;
 using namespace ::nl::Inet;
@@ -28,7 +28,7 @@ void HandleAliveTimer(System::Layer * aLayer, void * aAppState, System::Error aE
     err = SystemLayer.StartTimer(kAliveInterval, HandleAliveTimer, NULL);
     if (err != WEAVE_NO_ERROR)
     {
-        ESP_LOGE(TAG, "Failed to start timer: %s", ErrorStr(err));
+        ESP_LOGE(TAG, "SystemLayer.StartTimer() failed: %s", ErrorStr(err));
         return;
     }
 }
@@ -39,13 +39,16 @@ extern "C" void app_main()
 
     ESP_ERROR_CHECK( nvs_flash_init() );
 
-    if (!InitLwIPCoreLock()) {
+    err = ::WeavePlatform::PlatformMgr.InitLwIPCoreLock();
+    if (err != WEAVE_NO_ERROR)
+    {
+        ESP_LOGE(TAG, "PlatformMgr.InitLwIPCoreLock() failed: %s", ErrorStr(err));
         return;
     }
 
     tcpip_adapter_init();
 
-    ESP_ERROR_CHECK( esp_event_loop_init(HandleESPSystemEvent, NULL) );
+    ESP_ERROR_CHECK( esp_event_loop_init(::WeavePlatform::PlatformManager::HandleESPSystemEvent, NULL) );
 
     {
         wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
@@ -58,20 +61,23 @@ extern "C" void app_main()
         ESP_ERROR_CHECK( esp_wifi_start() );
     }
 
-    if (!InitWeaveStack())
+    err = ::WeavePlatform::PlatformMgr.InitWeaveStack();
+    if (err != WEAVE_NO_ERROR)
     {
+        ESP_LOGE(TAG, "PlatformMgr.InitWeaveStack() failed: %s", ErrorStr(err));
         return;
     }
 
-    ConnectivityMgr.SetWiFiAPMode(ConnectivityManager::kWiFiAPMode_OnDemand_NoStationProvision);
+    ::WeavePlatform::ConnectivityMgr.SetWiFiAPMode(ConnectivityManager::kWiFiAPMode_OnDemand_NoStationProvision);
 
-    err = SystemLayer.StartTimer(kAliveInterval, HandleAliveTimer, NULL);
-    if (err != WEAVE_NO_ERROR) {
-        ESP_LOGE(TAG, "Failed to start timer: %s", ErrorStr(err));
+    err = ::WeavePlatform::SystemLayer.StartTimer(kAliveInterval, HandleAliveTimer, NULL);
+    if (err != WEAVE_NO_ERROR)
+    {
+        ESP_LOGE(TAG, "SystemLayer.StartTimer() failed: %s", ErrorStr(err));
         return;
     }
 
     ESP_LOGI(TAG, "Ready");
 
-    SystemLayer.DispatchEvents();
+    ::WeavePlatform::PlatformMgr.RunEventLoop();
 }
