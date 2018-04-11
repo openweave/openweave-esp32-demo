@@ -21,7 +21,7 @@ void HandleAliveTimer(System::Layer * /* unused */, void * /* unused */, System:
 
     ESP_LOGI(TAG, "Alive");
 
-    heap_caps_print_heap_info(MALLOC_CAP_DEFAULT);
+    // heap_caps_print_heap_info(MALLOC_CAP_DEFAULT);
 
     err = SystemLayer.StartTimer(AliveIntervalMS, HandleAliveTimer, NULL);
     if (err != WEAVE_NO_ERROR)
