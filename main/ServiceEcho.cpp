@@ -14,7 +14,6 @@ using ::nl::Weave::Profiles::Echo_Next::WeaveEchoClient;
 extern const char * TAG;
 
 ServiceEchoClient ServiceEcho;
-static uint32_t SendInterval;
 
 static void EchoBindingEventHandler(void * apAppState, Binding::EventType aEvent, const Binding::InEventParam & aInParam, Binding::OutEventParam & aOutParam)
 {
@@ -62,7 +61,33 @@ static void EchoClientEventHandler(void * appState, WeaveEchoClient::EventType e
     }
 }
 
-WEAVE_ERROR ServiceEchoClient::Init()
+void ServiceEchoClient::PlatformEventHandler(const WeavePlatformEvent * event, intptr_t arg)
+{
+    WEAVE_ERROR err = WEAVE_NO_ERROR;
+
+    if (event->Type == WeavePlatformEvent::kEventType_ServiceConnectivityChange)
+    {
+        if (event->ServiceConnectivityChange.Result == kConnectivity_Established)
+        {
+            ESP_LOGI(TAG, "Starting periodic echos to service");
+            err = ServiceEcho.SendRepeating(ServiceEcho.mIntervalMS);
+            SuccessOrExit(err);
+        }
+        else if (event->ServiceConnectivityChange.Result == kConnectivity_Lost)
+        {
+            ESP_LOGI(TAG, "Stopping periodic echos to service");
+            ServiceEcho.Stop();
+        }
+    }
+
+exit:
+    if (err != WEAVE_NO_ERROR)
+    {
+        ESP_LOGE(TAG, "ServiceEchoClient::PlatformEventHandler() failed: %s", ErrorStr(err));
+    }
+}
+
+WEAVE_ERROR ServiceEchoClient::Init(uint32_t intervalMS)
 {
     WEAVE_ERROR err;
     Binding * binding;
@@ -73,6 +98,11 @@ WEAVE_ERROR ServiceEchoClient::Init()
     err = WeaveEchoClient::Init(binding, EchoClientEventHandler, NULL);
     SuccessOrExit(err);
 
+    err = PlatformMgr.AddEventHandler(PlatformEventHandler);
+    SuccessOrExit(err);
+
+    mIntervalMS = intervalMS;
+
 exit:
     if (err != WEAVE_NO_ERROR)
     {
@@ -80,33 +110,3 @@ exit:
     }
     return err;
 }
-
-void DelayedStart(System::Layer * /* unused */, void * /* unused */, System::Error /* unused */)
-{
-    ServiceEcho.SendRepeating(SendInterval);
-}
-
-WEAVE_ERROR ServiceEchoClient::Start(uint32_t delayMS, uint32_t intervalMS)
-{
-    WEAVE_ERROR err = WEAVE_NO_ERROR;
-
-    if (delayMS == 0)
-    {
-        err = SendRepeating(intervalMS);
-        SuccessOrExit(err);
-    }
-    else
-    {
-        SendInterval = intervalMS;
-        ::WeavePlatform::SystemLayer.StartTimer(delayMS, DelayedStart, NULL);
-    }
-
-exit:
-    if (err != WEAVE_NO_ERROR)
-    {
-        ESP_LOGE(TAG, "ServiceEchoClient::Start() failed: %s", ErrorStr(err));
-    }
-    return err;
-}
-
-

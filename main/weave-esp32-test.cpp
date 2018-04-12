@@ -61,13 +61,7 @@ extern "C" void app_main()
         return;
     }
 
-    err = ServiceEcho.Init();
-    if (err != WEAVE_NO_ERROR)
-    {
-        return;
-    }
-
-    err = ServiceEcho.Start(20000, 10000);
+    err = ServiceEcho.Init(10000);
     if (err != WEAVE_NO_ERROR)
     {
         return;

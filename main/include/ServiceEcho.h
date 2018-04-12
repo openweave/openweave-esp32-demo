@@ -7,8 +7,12 @@
 class ServiceEchoClient : public ::nl::Weave::Profiles::Echo_Next::WeaveEchoClient
 {
 public:
-    WEAVE_ERROR Init();
-    WEAVE_ERROR Start(uint32_t delayMS, uint32_t intervalMS);
+    WEAVE_ERROR Init(uint32_t intervalMS);
+
+private:
+    uint32_t mIntervalMS;
+
+    static void PlatformEventHandler(const ::WeavePlatform::WeavePlatformEvent * event, intptr_t arg);
 };
 
 extern ServiceEchoClient ServiceEcho;
