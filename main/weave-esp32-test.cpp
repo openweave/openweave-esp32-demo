@@ -16,7 +16,7 @@ using namespace ::nl::Inet;
 using namespace ::nl::Weave;
 using namespace ::WeavePlatform;
 
-const char *TAG = "weave-esp32-test";
+const char *TAG = "esp32-demo";
 
 extern "C" void app_main()
 {
