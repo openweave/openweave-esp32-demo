@@ -24,10 +24,10 @@ extern "C" void app_main()
 
     ESP_ERROR_CHECK( nvs_flash_init() );
 
-    err = ::WeavePlatform::PlatformMgr.InitLwIPCoreLock();
+    err = ::WeavePlatform::PlatformMgr.InitLocks();
     if (err != WEAVE_NO_ERROR)
     {
-        ESP_LOGE(TAG, "PlatformMgr.InitLwIPCoreLock() failed: %s", ErrorStr(err));
+        ESP_LOGE(TAG, "PlatformMgr.InitLocks() failed: %s", ErrorStr(err));
         return;
     }
 
@@ -69,5 +69,12 @@ extern "C" void app_main()
 
     ESP_LOGI(TAG, "Ready");
 
-    ::WeavePlatform::PlatformMgr.RunEventLoop();
+    err = ::WeavePlatform::PlatformMgr.StartEventLoopTask();
+    if (err != WEAVE_NO_ERROR)
+    {
+        ESP_LOGE(TAG, "PlatformMgr.StartEventLoop() failed: %s", ErrorStr(err));
+        return;
+    }
+
+    ESP_LOGI(TAG, "Main task exiting");
 }
