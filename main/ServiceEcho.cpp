@@ -1,13 +1,31 @@
+/*
+ *
+ *    Copyright (c) 2018 Nest Labs, Inc.
+ *    All rights reserved.
+ *
+ *    Licensed under the Apache License, Version 2.0 (the "License");
+ *    you may not use this file except in compliance with the License.
+ *    You may obtain a copy of the License at
+ *
+ *        http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *    Unless required by applicable law or agreed to in writing, software
+ *    distributed under the License is distributed on an "AS IS" BASIS,
+ *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *    See the License for the specific language governing permissions and
+ *    limitations under the License.
+ */
+
 #include "esp_system.h"
 #include "esp_log.h"
 
-#include <WeavePlatform.h>
+#include <WeaveDevice.h>
 #include "ServiceEcho.h"
 
 using namespace ::nl;
 using namespace ::nl::Inet;
 using namespace ::nl::Weave;
-using namespace ::WeavePlatform;
+using namespace ::nl::Weave::Device;
 
 using ::nl::Weave::Profiles::Echo_Next::WeaveEchoClient;
 
@@ -61,11 +79,11 @@ static void EchoClientEventHandler(void * appState, WeaveEchoClient::EventType e
     }
 }
 
-void ServiceEchoClient::PlatformEventHandler(const WeavePlatformEvent * event, intptr_t arg)
+void ServiceEchoClient::PlatformEventHandler(const WeaveDeviceEvent * event, intptr_t arg)
 {
     WEAVE_ERROR err = WEAVE_NO_ERROR;
 
-    if (event->Type == WeavePlatformEvent::kEventType_ServiceConnectivityChange)
+    if (event->Type == WeaveDeviceEvent::kEventType_ServiceConnectivityChange)
     {
         if (event->ServiceConnectivityChange.Result == kConnectivity_Established)
         {
@@ -92,7 +110,7 @@ WEAVE_ERROR ServiceEchoClient::Init(uint32_t intervalMS)
     WEAVE_ERROR err;
     Binding * binding;
 
-    binding = ::WeavePlatform::ExchangeMgr.NewBinding(EchoBindingEventHandler, NULL);
+    binding = ::nl::Weave::Device::ExchangeMgr.NewBinding(EchoBindingEventHandler, NULL);
     VerifyOrExit(binding != NULL, err = WEAVE_ERROR_NO_MEMORY);
 
     err = WeaveEchoClient::Init(binding, EchoClientEventHandler, NULL);

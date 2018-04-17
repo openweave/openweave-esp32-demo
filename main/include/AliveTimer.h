@@ -1,7 +1,7 @@
 #ifndef ALIVE_TIMER_H
 #define ALIVE_TIMER_H
 
-#include <WeavePlatform.h>
+#include <WeaveDevice.h>
 
 extern WEAVE_ERROR StartAliveTimer(uint32_t intervalMS);
 
