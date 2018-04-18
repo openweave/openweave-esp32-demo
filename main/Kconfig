@@ -1,0 +1,27 @@
+menu "Weave Example Device App"
+
+config EXAMPLE_DISPLAY_TYPE
+    int
+    range 0 3
+    default 0 if EXAMPLE_DISPLAY_TYPE0
+    default 1 if EXAMPLE_DISPLAY_TYPE1
+    default 2 if EXAMPLE_DISPLAY_TYPE2
+    default 3 if EXAMPLE_DISPLAY_TYPE3
+
+    choice
+        prompt "TFT Display Type"
+        default EXAMPLE_DISPLAY_TYPE0
+        help
+            Specifies the type of TFT display attached to the device. 
+    
+        config EXAMPLE_DISPLAY_TYPE0
+            bool "None"
+        config EXAMPLE_DISPLAY_TYPE1
+            bool "ESP-WROVER-KIT Display"
+        config EXAMPLE_DISPLAY_TYPE2
+            bool "Adafruit TFT Feather display"
+        config EXAMPLE_DISPLAY_TYPE3
+            bool "M5Stack TFT display"
+    endchoice
+
+endmenu

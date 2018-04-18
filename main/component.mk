@@ -18,4 +18,4 @@
 #      Component makefile for the Weave demo application.
 #
 
-COMPONENT_DEPENDS			:= weave weave-device
+COMPONENT_DEPENDS			:= weave weave-device tft spidriver

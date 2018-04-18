@@ -21,6 +21,8 @@
 
 PROJECT_NAME := weave-demo-app
 
+EXTRA_COMPONENT_DIRS += $(PROJECT_PATH)/components/ESP32_TFT_library/components
+
 COMPONENTS :=                     \
 app_trace                         \
 app_update                        \
@@ -51,8 +53,9 @@ partition_table                   \
 pthread							  \
 sdmmc                             \
 soc                               \
+spidriver                         \
 spi_flash                         \
-spiffs                            \
+tft                               \
 tcpip_adapter                     \
 ulp                               \
 vfs                               \

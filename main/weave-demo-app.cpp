@@ -28,6 +28,7 @@
 #include <Weave/Support/ErrorStr.h>
 #include "AliveTimer.h"
 #include "ServiceEcho.h"
+#include "UI.h"
 
 using namespace ::nl;
 using namespace ::nl::Inet;
@@ -94,5 +95,7 @@ extern "C" void app_main()
         return;
     }
 
-    ESP_LOGI(TAG, "Main task exiting");
+    // ESP_LOGI(TAG, "Main task exiting");
+
+    RunUI();
 }
