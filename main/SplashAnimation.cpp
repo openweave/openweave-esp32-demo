@@ -80,17 +80,24 @@ void SplashAnimation::Animate()
 
     if (mLogoY == UINT16_MAX || mLogoY < logoEndY)
     {
-        uint16_t newLogoY = (AnimationTimeMS != 0)
-                ? (uint16_t)((logoEndY * relativeTimeMS) / AnimationTimeMS)
-                : logoEndY;
+        uint16_t newLogoY;
+
+        if (AnimationTimeMS != 0 && relativeTimeMS < AnimationTimeMS)
+        {
+            newLogoY = (uint16_t)((logoEndY * relativeTimeMS) / AnimationTimeMS);
+        }
+        else
+        {
+            newLogoY = logoEndY;
+        }
 
         if (mLogoY != UINT16_MAX)
         {
-            enum { kMinLogoStep = 5 };
+            enum { kMinLogoStep = 1 };
 
             uint16_t stepY = newLogoY - mLogoY;
 
-            if (stepY < kMinLogoStep)
+            if (newLogoY < logoEndY && stepY < kMinLogoStep)
             {
                 return;
             }

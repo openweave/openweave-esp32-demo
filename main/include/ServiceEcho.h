@@ -9,6 +9,8 @@ class ServiceEchoClient : public ::nl::Weave::Profiles::Echo_Next::WeaveEchoClie
 public:
     WEAVE_ERROR Init(uint32_t intervalMS);
 
+    bool ServiceAlive;
+
 private:
     uint32_t mIntervalMS;
 

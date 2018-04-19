@@ -59,10 +59,6 @@ extern "C" void app_main()
         ESP_ERROR_CHECK( esp_wifi_init(&cfg) );
 
         ESP_ERROR_CHECK( esp_wifi_set_storage(WIFI_STORAGE_FLASH) );
-
-        ESP_ERROR_CHECK( esp_wifi_set_mode(WIFI_MODE_NULL) );
-
-        ESP_ERROR_CHECK( esp_wifi_start() );
     }
 
     err = ::nl::Weave::Device::PlatformMgr.InitWeaveStack();
@@ -73,6 +69,7 @@ extern "C" void app_main()
     }
 
     ::nl::Weave::Device::ConnectivityMgr.SetWiFiAPMode(ConnectivityManager::kWiFiAPMode_OnDemand_NoStationProvision);
+//    ::nl::Weave::Device::ConnectivityMgr.SetWiFiAPMode(ConnectivityManager::kWiFiAPMode_Enabled);
 
     err = StartAliveTimer(5000);
     if (err != WEAVE_NO_ERROR)

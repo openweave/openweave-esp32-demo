@@ -67,12 +67,15 @@ static void EchoClientEventHandler(void * appState, WeaveEchoClient::EventType e
     case WeaveEchoClient::kEvent_ResponseReceived:
         ESP_LOGI(TAG, "Echo response received from service");
         PacketBuffer::Free(inParam.ResponseReceived.Payload);
+        ServiceEcho.ServiceAlive = true;
         break;
     case WeaveEchoClient::kEvent_ResponseTimeout:
         ESP_LOGI(TAG, "Timeout waiting for echo response from service");
+        ServiceEcho.ServiceAlive = false;
         break;
     case WeaveEchoClient::kEvent_CommuncationError:
         ESP_LOGE(TAG, "Communication error sending echo request to service: %s", ErrorStr(inParam.CommuncationError.Reason));
+        ServiceEcho.ServiceAlive = false;
         break;
     default:
         ServiceEcho.DefaultEventHandler(appState, eventType, inParam, outParam);
@@ -95,6 +98,7 @@ void ServiceEchoClient::PlatformEventHandler(const WeaveDeviceEvent * event, int
         {
             ESP_LOGI(TAG, "Stopping periodic echos to service");
             ServiceEcho.Stop();
+            ServiceEcho.ServiceAlive = false;
         }
     }
 
@@ -119,6 +123,7 @@ WEAVE_ERROR ServiceEchoClient::Init(uint32_t intervalMS)
     err = PlatformMgr.AddEventHandler(PlatformEventHandler);
     SuccessOrExit(err);
 
+    ServiceAlive = false;
     mIntervalMS = intervalMS;
 
 exit:

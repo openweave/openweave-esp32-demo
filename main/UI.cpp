@@ -29,6 +29,7 @@
 #include "StatusIndicatorSet.h"
 
 #include <WeaveDevice.h>
+#include <ServiceEcho.h>
 
 using namespace ::nl::Weave::Device;
 
@@ -47,23 +48,26 @@ void RunUI(void)
 
         statusIndicators.Init(5);
         statusIndicators.Char[0] = 'W';
-        statusIndicators.Char[1] = 'A';
-        statusIndicators.Char[2] = 'I';
-        statusIndicators.Char[3] = 'T';
-        statusIndicators.Char[4] = 'S';
+        statusIndicators.Char[1] = 'I';
+        statusIndicators.Char[2] = 'T';
+        statusIndicators.Char[3] = 'S';
+        statusIndicators.Char[4] = 'A';
     }
 
     while (true)
     {
         if (HaveDisplay)
         {
-            PlatformMgr.LockWeaveStack();
+            if (PlatformMgr.TryLockWeaveStack())
+            {
+                statusIndicators.State[0] = ConnectivityMgr.IsWiFiStationConnected();
+                statusIndicators.State[1] = ConnectivityMgr.HaveIPv4InternetConnectivity();
+                statusIndicators.State[2] = ConnectivityMgr.HaveServiceConnectivity();
+                statusIndicators.State[3] = ServiceEcho.ServiceAlive;
+                statusIndicators.State[4] = ConnectivityMgr.IsWiFiAPActive();
 
-            statusIndicators.State[0] = ConnectivityMgr.IsWiFiStationConnected();
-            statusIndicators.State[2] = ConnectivityMgr.HaveIPv4InternetConnectivity();
-            statusIndicators.State[3] = ConnectivityMgr.HaveServiceConnectivity();
-
-            PlatformMgr.UnlockWeaveStack();
+                PlatformMgr.UnlockWeaveStack();
+            }
 
             splashAnimation.Animate();
             if (splashAnimation.Done && !initialSplashDone)
