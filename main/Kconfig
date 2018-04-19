@@ -1,4 +1,4 @@
-menu "Weave Example Device App"
+menu "Blue Sky Demo App"
 
 config EXAMPLE_DISPLAY_TYPE
     int
@@ -23,5 +23,13 @@ config EXAMPLE_DISPLAY_TYPE
         config EXAMPLE_DISPLAY_TYPE3
             bool "M5Stack TFT display"
     endchoice
+
+config FACTORY_RESET_BUTTON_DURATION
+    int "Factory Reset Button Duration (ms)"
+    range 0 65535
+    default 5000
+    help
+        The amount of time (in milliseconds) that the user must press the attention
+        button to initiate a factory reset.
 
 endmenu

@@ -16,9 +16,32 @@
  *    limitations under the License.
  */
 
-#ifndef UI_H
-#define UI_H
+#ifndef BUTTON_H
+#define BUTTON_H
 
-extern void RunUI(void);
+#include "esp_system.h"
+#include "esp_log.h"
+#include "driver/gpio.h"
 
-#endif // UI_H
+class Button
+{
+public:
+    esp_err_t Init(gpio_num_t gpioNum, uint16_t debouncePeriod);
+    bool Poll();
+    bool IsPressed();
+    uint32_t GetStateDuration();
+
+private:
+    uint32_t mLastReadTime;
+    gpio_num_t mGPIONum;
+    uint16_t mDebouncePeriod;
+    bool mEffectiveState;
+    bool mLastState;
+};
+
+inline bool Button::IsPressed()
+{
+    return mEffectiveState;
+}
+
+#endif // BUTTON_H
