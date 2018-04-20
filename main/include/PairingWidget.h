@@ -16,34 +16,21 @@
  *    limitations under the License.
  */
 
-#ifndef STATUS_INDICATOR_SET_H
-#define STATUS_INDICATOR_SET_H
+#ifndef PAIRING_WIDGET_H
+#define PAIRING_WIDGET_H
 
-class StatusIndicatorSet
+class PairingWidget
 {
 public:
-    enum
-    {
-        kMaxIndicators = 5
-    };
+    color_t QRCodeColor;
+    color_t PairingCodeColor;
+    uint16_t VMargin;
 
-    color_t Color;
-    uint16_t Size;
-    uint16_t VPos;
-    uint16_t HMargin;
-    char Char[kMaxIndicators];
-    bool State[kMaxIndicators];
-
-    void Init(uint8_t numIndicators);
-    void Update();
-    void Erase();
+    void Init();
+    void Display();
 
 private:
-    uint8_t mNumIndicators;
-    char mLastChar[kMaxIndicators];
-    bool mLastState[kMaxIndicators];
-
-    void DrawIndicator(char indicatorChar, bool state, uint8_t indicatorPos) const;
+    WEAVE_ERROR GetQRCodeString(char *& qrCodeStr);
 };
 
-#endif // STATUS_INDICATOR_SET_H
+#endif // PAIRING_WIDGET_H

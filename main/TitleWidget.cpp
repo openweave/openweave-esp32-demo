@@ -18,19 +18,15 @@
 
 #include "esp_system.h"
 #include "esp_log.h"
+#include "esp_timer.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
-#include <esp_timer.h>
-
-#include "Display.h"
-#include "SplashAnimation.h"
-
-extern "C" {
-#include "tftspi.h"
-#include "tft.h"
-} // extern "C"
 
 #include <string.h>
+
+#include "Display.h"
+#include "TitleWidget.h"
+
 
 extern const char *TAG;
 
@@ -46,28 +42,31 @@ const uint16_t OpenWeaveLogo_Height = 28;
 
 } // unnamed namespace
 
-void SplashAnimation::Init(const char * title)
+void TitleWidget::Init(const char * title)
 {
     Title = title;
     LogoVPos = 20;
     TitleVPos = 45;
+    TitleColor = { 141, 151 , 155 }; // PANTONE 443 C
     AnimationTimeMS = 1000;
     TitleDelayMS = 300;
-    TitleColor = { 141, 151 , 155 }; // PANTONE 443 C
+    LingerDelayMS = 500;
     mStartTimeUS = 0;
     mLogoX = (DisplayWidth - OpenWeaveLogo_Width) / 2;
     mLogoY = UINT16_MAX;
+    mTitleDisplayed = false;
     Done = true;
 }
 
-void SplashAnimation::Start()
+void TitleWidget::Start()
 {
     mStartTimeUS = ::esp_timer_get_time();
     mLogoY = UINT16_MAX;
+    mTitleDisplayed = false;
     Done = false;
 }
 
-void SplashAnimation::Animate()
+void TitleWidget::Animate()
 {
     if (Done)
     {
@@ -106,20 +105,28 @@ void SplashAnimation::Animate()
         }
 
         mLogoY = newLogoY;
-        // TFT_drawRect((int)mLogoX, (int)mLogoY, (int)OpenWeaveLogo_Width, (int)OpenWeaveLogo_Height, TFT_CYAN);
+
         TFT_bmp_image((int)mLogoX, (int)mLogoY, 0, NULL, (uint8_t *)OpenWeaveLogo, sizeof(OpenWeaveLogo));
     }
 
-    if (relativeTimeMS >= (AnimationTimeMS + TitleDelayMS))
+    if (!mTitleDisplayed && relativeTimeMS >= (AnimationTimeMS + TitleDelayMS))
     {
+        TFT_setFont(DEJAVU24_FONT, NULL);
+
         uint16_t titleWidth = (uint16_t)TFT_getStringWidth((char *)Title);
         uint16_t titleX = (DisplayWidth - titleWidth) / 2;
         uint16_t titleY = (DisplayHeight * TitleVPos) / 100;
 
         _fg = TitleColor;
+        _bg = TFT_BLACK;
         TFT_print((char *)Title, titleX, titleY);
 
-        ESP_LOGI(TAG, "Splash animation done");
+        mTitleDisplayed = true;
+    }
+
+    if (relativeTimeMS >= (AnimationTimeMS + TitleDelayMS + LingerDelayMS))
+    {
+        ESP_LOGI(TAG, "Title animation done");
 
         Done = true;
     }

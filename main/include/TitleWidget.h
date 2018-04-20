@@ -16,31 +16,32 @@
  *    limitations under the License.
  */
 
-#ifndef DISPLAY_H
-#define DISPLAY_H
+#ifndef TITLE_WIDGET_H
+#define TITLE_WIDGET_H
 
-#include "esp_system.h"
+class TitleWidget
+{
+public:
+    void Init(const char * title);
+    void Start();
+    void Animate();
 
-#if CONFIG_EXAMPLE_DISPLAY_TYPE != 0
+    const char * Title;
+    uint16_t LogoVPos;
+    uint16_t TitleVPos;
+    color_t TitleColor;
+    uint32_t AnimationTimeMS;
+    uint32_t TitleDelayMS;
+    uint32_t LingerDelayMS;
+    bool Done;
 
-extern "C" {
-#include "tftspi.h"
-#include "tft.h"
-} // extern "C"
+private:
+    int64_t mStartTimeUS;
+    uint16_t mLogoX;
+    uint16_t mLogoY;
+    bool mTitleDisplayed;
+};
 
-extern bool HaveDisplay;
-extern uint16_t DisplayHeight;
-extern uint16_t DisplayWidth;
+#endif // TITLE_WIDGET_H
 
-#else // #if CONFIG_EXAMPLE_DISPLAY_TYPE == 0
 
-#define HaveDisplay 0
-#define DisplayHeight 0
-#define DisplayWidth 0
-
-#endif // #if CONFIG_EXAMPLE_DISPLAY_TYPE == 0
-
-extern esp_err_t InitDisplay();
-extern void ClearDisplay();
-
-#endif // DISPLAY_H

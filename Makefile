@@ -51,6 +51,7 @@ newlib                            \
 nvs_flash                         \
 partition_table                   \
 pthread							  \
+QRCode                            \
 sdmmc                             \
 soc                               \
 spidriver                         \

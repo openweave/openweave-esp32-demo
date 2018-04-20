@@ -51,7 +51,6 @@ bool Button::Poll()
 
     if (newState != mLastState)
     {
-        ESP_LOGE(TAG, "Button: last = %s new = %s", mLastState ? "true" : "false", newState ? "true" : "false");
         mLastState = newState;
         mLastReadTime = now;
     }

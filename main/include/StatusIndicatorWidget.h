@@ -16,30 +16,34 @@
  *    limitations under the License.
  */
 
-#ifndef SPLASH_ANIMATION_H
-#define SPLASH_ANIMATION_H
+#ifndef STATUS_INDICATOR_WIDGET_H
+#define STATUS_INDICATOR_WIDGET_H
 
-class SplashAnimation
+class StatusIndicatorWidget
 {
 public:
-    void Init(const char * title);
-    void Start();
-    void Animate();
+    enum
+    {
+        kMaxIndicators = 5
+    };
 
-    const char * Title;
-    uint16_t LogoVPos;
-    uint16_t TitleVPos;
-    uint32_t AnimationTimeMS;
-    uint32_t TitleDelayMS;
-    color_t TitleColor;
-    bool Done;
+    color_t Color;
+    uint16_t Size;
+    uint16_t VPos;
+    uint16_t HMargin;
+    char Char[kMaxIndicators];
+    bool State[kMaxIndicators];
+
+    void Init(uint8_t numIndicators);
+    void Display();
+    void Update();
 
 private:
-    int64_t mStartTimeUS;
-    uint16_t mLogoX;
-    uint16_t mLogoY;
+    uint8_t mNumIndicators;
+    char mLastChar[kMaxIndicators];
+    bool mLastState[kMaxIndicators];
+
+    void DrawIndicator(char indicatorChar, bool state, uint8_t indicatorPos) const;
 };
 
-#endif // SPLASH_ANIMATION_H
-
-
+#endif // STATUS_INDICATOR_WIDGET_H

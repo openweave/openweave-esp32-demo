@@ -20,10 +20,11 @@
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+
 #include <esp_timer.h>
 
 #include "Display.h"
-#include "StatusIndicatorSet.h"
+#include "StatusIndicatorWidget.h"
 
 extern "C" {
 #include "tftspi.h"
@@ -34,7 +35,7 @@ extern "C" {
 
 extern const char *TAG;
 
-void StatusIndicatorSet::Init(uint8_t numIndicators)
+void StatusIndicatorWidget::Init(uint8_t numIndicators)
 {
     Color = { 4, 173, 201 }; // PANTONE 3125 C
     Size = 15;
@@ -47,7 +48,17 @@ void StatusIndicatorSet::Init(uint8_t numIndicators)
     memset(mLastState, 0, sizeof(mLastState));
 }
 
-void StatusIndicatorSet::Update()
+void StatusIndicatorWidget::Display()
+{
+    for (uint8_t i = 0; i < mNumIndicators; i++)
+    {
+        DrawIndicator(Char[i], State[i], i);
+        mLastChar[i] = Char[i];
+        mLastState[i] = State[i];
+    }
+}
+
+void StatusIndicatorWidget::Update()
 {
     for (uint8_t i = 0; i < mNumIndicators; i++)
     {
@@ -60,7 +71,7 @@ void StatusIndicatorSet::Update()
     }
 }
 
-void StatusIndicatorSet::DrawIndicator(char indicatorChar, bool state, uint8_t indicatorPos) const
+void StatusIndicatorWidget::DrawIndicator(char indicatorChar, bool state, uint8_t indicatorPos) const
 {
     uint16_t sizePix = (DisplayHeight * Size) / 100;
     uint16_t marginPix = (DisplayWidth * HMargin) / 100;
