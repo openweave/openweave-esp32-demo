@@ -19,6 +19,8 @@
 #ifndef TITLE_WIDGET_H
 #define TITLE_WIDGET_H
 
+#if CONFIG_EXAMPLE_DISPLAY_TYPE != 0
+
 class TitleWidget
 {
 public:
@@ -41,6 +43,8 @@ private:
     uint16_t mLogoY;
     bool mTitleDisplayed;
 };
+
+#endif // CONFIG_EXAMPLE_DISPLAY_TYPE != 0
 
 #endif // TITLE_WIDGET_H
 

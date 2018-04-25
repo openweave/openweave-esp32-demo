@@ -29,6 +29,8 @@
 #include "Display.h"
 #include "PairingWidget.h"
 
+#if CONFIG_EXAMPLE_DISPLAY_TYPE != 0
+
 extern const char * TAG;
 
 using namespace ::nl;
@@ -157,3 +159,4 @@ exit:
     return err;
 }
 
+#endif // CONFIG_EXAMPLE_DISPLAY_TYPE != 0

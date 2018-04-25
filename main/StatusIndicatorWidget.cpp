@@ -16,22 +16,18 @@
  *    limitations under the License.
  */
 
+#include <string.h>
+
 #include "esp_system.h"
 #include "esp_log.h"
+#include "esp_timer.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 
-#include <esp_timer.h>
+#if CONFIG_EXAMPLE_DISPLAY_TYPE != 0
 
 #include "Display.h"
 #include "StatusIndicatorWidget.h"
-
-extern "C" {
-#include "tftspi.h"
-#include "tft.h"
-} // extern "C"
-
-#include <string.h>
 
 extern const char *TAG;
 
@@ -110,4 +106,6 @@ void StatusIndicatorWidget::DrawIndicator(char indicatorChar, bool state, uint8_
         TFT_print(indicatorStr, (int)charX, (int)charY);
     }
 }
+
+#endif // CONFIG_EXAMPLE_DISPLAY_TYPE != 0
 

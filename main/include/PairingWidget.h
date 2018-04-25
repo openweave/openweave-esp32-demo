@@ -19,6 +19,8 @@
 #ifndef PAIRING_WIDGET_H
 #define PAIRING_WIDGET_H
 
+#if CONFIG_EXAMPLE_DISPLAY_TYPE != 0
+
 class PairingWidget
 {
 public:
@@ -32,5 +34,7 @@ public:
 private:
     WEAVE_ERROR GetQRCodeString(char *& qrCodeStr);
 };
+
+#endif // CONFIG_EXAMPLE_DISPLAY_TYPE != 0
 
 #endif // PAIRING_WIDGET_H

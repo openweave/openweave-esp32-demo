@@ -16,17 +16,18 @@
  *    limitations under the License.
  */
 
+#include <string.h>
+
 #include "esp_system.h"
 #include "esp_log.h"
 #include "esp_timer.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 
-#include <string.h>
+#if CONFIG_EXAMPLE_DISPLAY_TYPE != 0
 
 #include "Display.h"
 #include "TitleWidget.h"
-
 
 extern const char *TAG;
 
@@ -132,4 +133,4 @@ void TitleWidget::Animate()
     }
 }
 
-
+#endif // CONFIG_EXAMPLE_DISPLAY_TYPE != 0

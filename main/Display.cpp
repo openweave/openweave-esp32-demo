@@ -16,17 +16,16 @@
  *    limitations under the License.
  */
 
+#include <string.h>
+
 #include "esp_system.h"
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 
-extern "C" {
-#include "tftspi.h"
-#include "tft.h"
-}
+#if CONFIG_EXAMPLE_DISPLAY_TYPE != 0
 
-#include <string.h>
+#include "Display.h"
 
 extern const char *TAG;
 
@@ -36,8 +35,6 @@ uint16_t DisplayWidth = 0;
 
 esp_err_t InitDisplay()
 {
-#if CONFIG_EXAMPLE_DISPLAY_TYPE != 0
-
     esp_err_t err;
     spi_lobo_device_handle_t spi;
 
@@ -100,17 +97,11 @@ esp_err_t InitDisplay()
     ESP_LOGE(TAG, "Display initialized (height %u, width %u)", DisplayHeight, DisplayWidth);
 
     return err;
-
-#else // CONFIG_EXAMPLE_DISPLAY_TYPE
-
-    return ESP_ERR_NOT_SUPPORTED;
-
-#endif // CONFIG_EXAMPLE_DISPLAY_TYPE
 }
 
 void ClearDisplay()
 {
-#if CONFIG_EXAMPLE_DISPLAY_TYPE != 0
     TFT_fillRect(0, 0, (int)DisplayWidth, (int)DisplayHeight, TFT_BLACK);
-#endif
 }
+
+#endif // CONFIG_EXAMPLE_DISPLAY_TYPE != 0

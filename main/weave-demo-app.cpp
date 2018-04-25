@@ -46,6 +46,8 @@ const char * TAG = "demo-app";
 #define M5STACK_BUTTON_B_PIN GPIO_NUM_38
 #define M5STACK_BUTTON_C_PIN GPIO_NUM_37
 
+#if CONFIG_EXAMPLE_DISPLAY_TYPE != 0
+
 enum DisplayMode
 {
     kDisplayMode_Uninitialized,
@@ -57,6 +59,9 @@ static DisplayMode displayMode = kDisplayMode_Uninitialized;
 static TitleWidget titleWidget;
 static StatusIndicatorWidget statusIndicator;
 static PairingWidget pairingWidget;
+
+#endif // CONFIG_EXAMPLE_DISPLAY_TYPE != 0
+
 static Button attentionButton;
 static bool isPairedToAccount = true;
 static volatile bool commissionerDetected = false;
@@ -142,12 +147,16 @@ extern "C" void app_main()
         return;
     }
 
+#if CONFIG_EXAMPLE_DISPLAY_TYPE != 0
+
     // Look for an attempt to initialize a display device.  But don't fail if one isn't found.
     err = InitDisplay();
     if (err != ESP_OK)
     {
         ESP_LOGE(TAG, "InitDisplay() failed: %s", esp_err_to_name(err));
     }
+
+#endif // CONFIG_EXAMPLE_DISPLAY_TYPE != 0
 
     // Initialize the attention button.
     err = attentionButton.Init(M5STACK_BUTTON_C_PIN, 50);
@@ -156,6 +165,8 @@ extern "C" void app_main()
         ESP_LOGE(TAG, "Button.Init() failed: %s", esp_err_to_name(err));
         return;
     }
+
+#if CONFIG_EXAMPLE_DISPLAY_TYPE != 0
 
     // If the device has a display, initialize the UI widgets.
     if (HaveDisplay)
@@ -172,7 +183,11 @@ extern "C" void app_main()
         statusIndicator.Char[4] = 'A';
     }
 
+#endif // CONFIG_EXAMPLE_DISPLAY_TYPE != 0
+
     ESP_LOGI(TAG, "Ready");
+
+#if CONFIG_EXAMPLE_DISPLAY_TYPE != 0
 
     // If the device has a display, run the title animation before starting the Weave stack.
     if (HaveDisplay)
@@ -192,6 +207,8 @@ extern "C" void app_main()
 
         displayMode = kDisplayMode_StatusScreen;
     }
+
+#endif // CONFIG_EXAMPLE_DISPLAY_TYPE != 0
 
     // Start a task to run the Weave Device event loop.
     err = PlatformMgr.StartEventLoopTask();
@@ -226,6 +243,8 @@ extern "C" void app_main()
             PlatformMgr.UnlockWeaveStack();
             return;
         }
+
+#if CONFIG_EXAMPLE_DISPLAY_TYPE != 0
 
         // If the device has a display...
         if (HaveDisplay)
@@ -288,6 +307,8 @@ extern "C" void app_main()
                 statusIndicator.Update();
             }
         }
+
+#endif // CONFIG_EXAMPLE_DISPLAY_TYPE != 0
 
         vTaskDelay(50 / portTICK_RATE_MS);
     }

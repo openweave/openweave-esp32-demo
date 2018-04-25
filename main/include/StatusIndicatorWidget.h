@@ -19,6 +19,8 @@
 #ifndef STATUS_INDICATOR_WIDGET_H
 #define STATUS_INDICATOR_WIDGET_H
 
+#if CONFIG_EXAMPLE_DISPLAY_TYPE != 0
+
 class StatusIndicatorWidget
 {
 public:
@@ -45,5 +47,7 @@ private:
 
     void DrawIndicator(char indicatorChar, bool state, uint8_t indicatorPos) const;
 };
+
+#endif // CONFIG_EXAMPLE_DISPLAY_TYPE != 0
 
 #endif // STATUS_INDICATOR_WIDGET_H
