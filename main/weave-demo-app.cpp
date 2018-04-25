@@ -60,10 +60,11 @@ static TitleWidget titleWidget;
 static StatusIndicatorWidget statusIndicator;
 static PairingWidget pairingWidget;
 
+static bool isPairedToAccount = true;
+
 #endif // CONFIG_EXAMPLE_DISPLAY_TYPE != 0
 
 static Button attentionButton;
-static bool isPairedToAccount = true;
 static volatile bool commissionerDetected = false;
 
 static void DeviceEventHandler(const WeaveDeviceEvent * event, intptr_t arg);
@@ -256,11 +257,15 @@ extern "C" void app_main()
             // tasks is busy, e.g. with a long crypto operation.
             if (PlatformMgr.TryLockWeaveStack())
             {
+                bool hasBLEConnections = (ConnectivityMgr.NumBLEConnections() != 0);
+
                 statusIndicator.State[0] = ConnectivityMgr.IsWiFiStationConnected();
                 statusIndicator.State[1] = ConnectivityMgr.HaveIPv4InternetConnectivity();
                 statusIndicator.State[2] = ConnectivityMgr.HaveServiceConnectivity();
                 statusIndicator.State[3] = ServiceEcho.ServiceAlive;
-                statusIndicator.State[4] = ConnectivityMgr.IsWiFiAPActive();
+                statusIndicator.State[4] = (hasBLEConnections || ConnectivityMgr.IsWiFiAPActive());
+
+                statusIndicator.Char[4] = (hasBLEConnections) ? 'B' : 'A';
 
                 isPairedToAccount = ConfigurationMgr.IsPairedToAccount();
 
