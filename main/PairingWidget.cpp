@@ -29,7 +29,7 @@
 #include "Display.h"
 #include "PairingWidget.h"
 
-#if CONFIG_EXAMPLE_DISPLAY_TYPE != 0
+#if CONFIG_HAVE_DISPLAY
 
 extern const char * TAG;
 
@@ -159,4 +159,4 @@ exit:
     return err;
 }
 
-#endif // CONFIG_EXAMPLE_DISPLAY_TYPE != 0
+#endif // CONFIG_HAVE_DISPLAY

@@ -33,6 +33,7 @@
 #include "TitleWidget.h"
 #include "StatusIndicatorWidget.h"
 #include "PairingWidget.h"
+#include "LEDWidget.h"
 #include "Button.h"
 
 using namespace ::nl;
@@ -42,11 +43,30 @@ using namespace ::nl::Weave::Device;
 
 const char * TAG = "demo-app";
 
-#define M5STACK_BUTTON_A_PIN GPIO_NUM_39
-#define M5STACK_BUTTON_B_PIN GPIO_NUM_38
-#define M5STACK_BUTTON_C_PIN GPIO_NUM_37
+#if CONFIG_DEVICE_TYPE_M5STACK
 
-#if CONFIG_EXAMPLE_DISPLAY_TYPE != 0
+// Use the right button (button "C") as the attention button on M5Stack
+#define ATTENTION_BUTTON_GPIO_NUM GPIO_NUM_37
+
+// No status LED on M5Stack
+#define STATUS_LED_GPIO_NUM GPIO_NUM_MAX
+
+#elif CONFIG_DEVICE_TYPE_ESP_32S
+
+// Use the IO0 button as the attention button on ESP-32S
+#define ATTENTION_BUTTON_GPIO_NUM GPIO_NUM_0
+
+// Use LED1 (blue LED) as status LED on ESP-32S
+#define STATUS_LED_GPIO_NUM GPIO_NUM_2
+
+#else // !CONFIG_DEVICE_TYPE_ESP_32S
+
+#error "Unsupported device type selected"
+
+#endif // !CONFIG_DEVICE_TYPE_ESP_32S
+
+
+#if CONFIG_HAVE_DISPLAY
 
 enum DisplayMode
 {
@@ -60,18 +80,27 @@ static TitleWidget titleWidget;
 static StatusIndicatorWidget statusIndicator;
 static PairingWidget pairingWidget;
 
-static bool isPairedToAccount = true;
-
-#endif // CONFIG_EXAMPLE_DISPLAY_TYPE != 0
+#endif // CONFIG_HAVE_DISPLAY
 
 static Button attentionButton;
+static LEDWidget statusLED;
+static bool isWiFiStationProvisioned = false;
+static bool isWiFiStationEnabled = false;
+static bool isWiFiStationConnected = false;
+static bool isWiFiAPActive = false;
+static bool haveIPv4Connectivity = false;
+static bool isServiceProvisioned = false;
+static bool haveServiceConnectivity = false;
+static bool haveBLEConnections = false;
+static bool isServiceAlive = false;
+static bool isPairedToAccount = true;
 static volatile bool commissionerDetected = false;
 
 static void DeviceEventHandler(const WeaveDeviceEvent * event, intptr_t arg);
 
 extern "C" void app_main()
 {
-    esp_err_t err;      // A quick note about errors: Weave adopts the error type and numbering
+    WEAVE_ERROR err;    // A quick note about errors: Weave adopts the error type and numbering
                         // convention of the environment into which it is ported.  Thus esp_err_t
                         // and WEAVE_ERROR are in fact the same type, and both ESP-IDF errors
                         // and Weave-specific errors can be stored in the same value without
@@ -148,68 +177,60 @@ extern "C" void app_main()
         return;
     }
 
-#if CONFIG_EXAMPLE_DISPLAY_TYPE != 0
-
-    // Look for an attempt to initialize a display device.  But don't fail if one isn't found.
-    err = InitDisplay();
-    if (err != ESP_OK)
-    {
-        ESP_LOGE(TAG, "InitDisplay() failed: %s", esp_err_to_name(err));
-    }
-
-#endif // CONFIG_EXAMPLE_DISPLAY_TYPE != 0
-
     // Initialize the attention button.
-    err = attentionButton.Init(M5STACK_BUTTON_C_PIN, 50);
+    err = attentionButton.Init(ATTENTION_BUTTON_GPIO_NUM, 50);
     if (err != ESP_OK)
     {
         ESP_LOGE(TAG, "Button.Init() failed: %s", esp_err_to_name(err));
         return;
     }
 
-#if CONFIG_EXAMPLE_DISPLAY_TYPE != 0
+    // Initialize the status LED.
+    statusLED.Init(STATUS_LED_GPIO_NUM);
 
-    // If the device has a display, initialize the UI widgets.
-    if (HaveDisplay)
+#if CONFIG_HAVE_DISPLAY
+
+    // Initialize the display device.
+    err = InitDisplay();
+    if (err != ESP_OK)
     {
-        titleWidget.Init("Blue Sky Demo");
-
-        pairingWidget.Init();
-
-        statusIndicator.Init(5);
-        statusIndicator.Char[0] = 'W';
-        statusIndicator.Char[1] = 'I';
-        statusIndicator.Char[2] = 'T';
-        statusIndicator.Char[3] = 'S';
-        statusIndicator.Char[4] = 'A';
+        ESP_LOGE(TAG, "InitDisplay() failed: %s", esp_err_to_name(err));
+        return;
     }
 
-#endif // CONFIG_EXAMPLE_DISPLAY_TYPE != 0
+    // Unitialize the UI widgets.
+    titleWidget.Init("Blue Sky Demo");
+    pairingWidget.Init();
+    statusIndicator.Init(5);
+    statusIndicator.Char[0] = 'W';
+    statusIndicator.Char[1] = 'I';
+    statusIndicator.Char[2] = 'T';
+    statusIndicator.Char[3] = 'S';
+    statusIndicator.Char[4] = 'A';
+
+#endif // CONFIG_HAVE_DISPLAY
 
     ESP_LOGI(TAG, "Ready");
 
-#if CONFIG_EXAMPLE_DISPLAY_TYPE != 0
+#if CONFIG_HAVE_DISPLAY
 
     // If the device has a display, run the title animation before starting the Weave stack.
-    if (HaveDisplay)
+    titleWidget.Start();
+    while (true)
     {
-        titleWidget.Start();
-        while (true)
+        titleWidget.Animate();
+        if (titleWidget.Done)
         {
-            titleWidget.Animate();
-            if (titleWidget.Done)
-            {
-                break;
-            }
-            vTaskDelay(50 / portTICK_RATE_MS);
+            break;
         }
-
-        statusIndicator.Display();
-
-        displayMode = kDisplayMode_StatusScreen;
+        vTaskDelay(50 / portTICK_RATE_MS);
     }
 
-#endif // CONFIG_EXAMPLE_DISPLAY_TYPE != 0
+    // Display the status indicators.
+    statusIndicator.Display();
+    displayMode = kDisplayMode_StatusScreen;
+
+#endif // CONFIG_HAVE_DISPLAY
 
     // Start a task to run the Weave Device event loop.
     err = PlatformMgr.StartEventLoopTask();
@@ -222,10 +243,76 @@ extern "C" void app_main()
     // Repeatedly loop to drive the UI...
     while (true)
     {
-        bool attentionButtonPressDetected = false;
+        // Collect connectivity and configuration state from the Weave stack.  Because the
+        // Weave event loop is being run in a separate task, the stack must be locked
+        // while these values are queried.  However we use a non-blocking lock request
+        // (TryLockWeaveStack()) to avoid blocking other UI activities when the Weave
+        // task is busy (e.g. with a long crypto operation).
+        if (PlatformMgr.TryLockWeaveStack())
+        {
+            isWiFiStationProvisioned = ConnectivityMgr.IsWiFiStationProvisioned();
+            isWiFiStationEnabled = ConnectivityMgr.IsWiFiStationEnabled();
+            isWiFiStationConnected = ConnectivityMgr.IsWiFiStationConnected();
+            isWiFiAPActive = ConnectivityMgr.IsWiFiAPActive();
+            haveBLEConnections = (ConnectivityMgr.NumBLEConnections() != 0);
+            haveIPv4Connectivity = ConnectivityMgr.HaveIPv4InternetConnectivity();
+            isServiceProvisioned = ConfigurationMgr.IsServiceProvisioned();
+            isPairedToAccount = ConfigurationMgr.IsPairedToAccount();
+            haveServiceConnectivity = ConnectivityMgr.HaveServiceConnectivity();
+            isServiceAlive = ServiceEcho.ServiceAlive;
+
+            PlatformMgr.UnlockWeaveStack();
+        }
+
+        // Consider the system to be "fully connected" if it has IPv4 connectivity, service
+        // connectivity and it is able to interact with the service on a regular basis.
+        bool isFullyConnected = (haveIPv4Connectivity && haveServiceConnectivity && isServiceAlive);
+
+        // Update the status LED...
+        //
+        // If the WiFi station interface is provisioned and enabled, but the system doesn't have WiFi/Internet connectivity,
+        // OR if the system is service provisioned, but not yet able to talk to the service,
+        // THEN blink the LED at an even 500ms rate to single the system is in the process of establishing connectivity.
+        //
+        // If the system is "fully connected" then turn the LED on, UNLESS the AP is enabled, or there is a BLE connection,
+        // in which case blink the LED off for a short period of time.
+        //
+        // Finally, if the system is not "fully connected" then turn the LED off, UNLESS the AP is enabled, or there is a
+        // BLE connection, in which case blink the LED on for a short period of time.
+        //
+        if ((isWiFiStationProvisioned && isWiFiStationEnabled && (!isWiFiStationConnected || !haveIPv4Connectivity)) ||
+            (isServiceProvisioned && (!haveServiceConnectivity || !isServiceAlive)))
+        {
+            statusLED.Blink(500);
+        }
+        else if (isFullyConnected)
+        {
+            if (isWiFiAPActive || haveBLEConnections)
+            {
+                statusLED.Blink(950, 50);
+            }
+            else
+            {
+                statusLED.Set(true);
+            }
+        }
+        else
+        {
+            if (isWiFiAPActive || haveBLEConnections)
+            {
+                statusLED.Blink(50, 950);
+            }
+            else
+            {
+                statusLED.Set(true);
+            }
+        }
+        statusLED.Animate();
 
         // Poll the attention button.  Whenever we detect a *release* of the button
         // demand start the WiFi AP interface.
+        bool attentionButtonPressDetected = false;
+        (void)attentionButtonPressDetected;
         if (attentionButton.Poll() && !attentionButton.IsPressed())
         {
             PlatformMgr.LockWeaveStack();
@@ -245,75 +332,57 @@ extern "C" void app_main()
             return;
         }
 
-#if CONFIG_EXAMPLE_DISPLAY_TYPE != 0
+#if CONFIG_HAVE_DISPLAY
 
-        // If the device has a display...
-        if (HaveDisplay)
+        // Update the status indicators.
+        statusIndicator.State[0] = isWiFiStationConnected;
+        statusIndicator.State[1] = haveIPv4Connectivity;
+        statusIndicator.State[2] = haveServiceConnectivity;
+        statusIndicator.State[3] = isServiceAlive;
+        statusIndicator.State[4] = (haveBLEConnections || isWiFiAPActive);
+        statusIndicator.Char[4] = (haveBLEConnections) ? 'B' : 'A';
+
+        // If currently displaying the status screen and the attention button
+        // is pressed while the device is not paired to an account, switch to
+        // the pairing screen.
+        if (displayMode == kDisplayMode_StatusScreen)
         {
-            // Collect connectivity and configuration state from the Weave stack.  Because the
-            // Weave event loop is being run in a separate task, the stack must be locked
-            // while these values are queried.  However we use a non-blocking lock request
-            // (TryLockWeaveStack()) to avoid blocking other UI activities when the Weave
-            // tasks is busy, e.g. with a long crypto operation.
-            if (PlatformMgr.TryLockWeaveStack())
+            if (!isPairedToAccount && attentionButtonPressDetected)
             {
-                bool hasBLEConnections = (ConnectivityMgr.NumBLEConnections() != 0);
-
-                statusIndicator.State[0] = ConnectivityMgr.IsWiFiStationConnected();
-                statusIndicator.State[1] = ConnectivityMgr.HaveIPv4InternetConnectivity();
-                statusIndicator.State[2] = ConnectivityMgr.HaveServiceConnectivity();
-                statusIndicator.State[3] = ServiceEcho.ServiceAlive;
-                statusIndicator.State[4] = (hasBLEConnections || ConnectivityMgr.IsWiFiAPActive());
-
-                statusIndicator.Char[4] = (hasBLEConnections) ? 'B' : 'A';
-
-                isPairedToAccount = ConfigurationMgr.IsPairedToAccount();
-
-                PlatformMgr.UnlockWeaveStack();
-            }
-
-            bool wifiAPActive = statusIndicator.State[4];
-
-            // If currently displaying the status screen and the attention button
-            // is pressed while the device is not paired to an account, switch to
-            // the pairing screen.
-            if (displayMode == kDisplayMode_StatusScreen)
-            {
-                if (!isPairedToAccount && attentionButtonPressDetected)
-                {
-                    ClearDisplay();
-                    pairingWidget.Display();
-                    commissionerDetected = false;
-                    displayMode = kDisplayMode_PairingScreen;
-                }
-            }
-
-            // If currently displaying the pairing screen and...
-            //     the WiFI AP is no longer active,
-            //     OR the device is now paired to an account,
-            //     OR a session from a commissioner application has been established,
-            //     OR the attention button is pressed
-            // then switch back to the status screen.
-            else if (displayMode == kDisplayMode_PairingScreen)
-            {
-                if (!wifiAPActive || isPairedToAccount || commissionerDetected || attentionButtonPressDetected)
-                {
-                    ClearDisplay();
-                    titleWidget.Start();
-                    statusIndicator.Display();
-                    displayMode = kDisplayMode_StatusScreen;
-                }
-            }
-
-            // If displaying the status screen, run the title animation and update the status indicators.
-            if (displayMode == kDisplayMode_StatusScreen)
-            {
-                titleWidget.Animate();
-                statusIndicator.Update();
+                ClearDisplay();
+                pairingWidget.Display();
+                commissionerDetected = false;
+                displayMode = kDisplayMode_PairingScreen;
             }
         }
 
-#endif // CONFIG_EXAMPLE_DISPLAY_TYPE != 0
+        // If currently displaying the pairing screen and...
+        //     the WiFI AP is no longer active,
+        //     OR the device is now paired to an account,
+        //     OR a session from a commissioner application has been established,
+        //     OR the attention button is pressed
+        // then switch back to the status screen.
+        else if (displayMode == kDisplayMode_PairingScreen)
+        {
+            if (!isWiFiAPActive || isPairedToAccount ||
+                commissionerDetected || attentionButtonPressDetected)
+            {
+                ClearDisplay();
+                titleWidget.Start();
+                statusIndicator.Display();
+                displayMode = kDisplayMode_StatusScreen;
+            }
+        }
+
+        // If displaying the status screen, run the title animation and update
+        // the status indicators.
+        if (displayMode == kDisplayMode_StatusScreen)
+        {
+            titleWidget.Animate();
+            statusIndicator.Update();
+        }
+
+#endif // CONFIG_HAVE_DISPLAY
 
         vTaskDelay(50 / portTICK_RATE_MS);
     }

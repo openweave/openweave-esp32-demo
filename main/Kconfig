@@ -1,35 +1,33 @@
 menu "Blue Sky Demo App"
 
-config EXAMPLE_DISPLAY_TYPE
-    int
-    range 0 3
-    default 0 if EXAMPLE_DISPLAY_TYPE0
-    default 1 if EXAMPLE_DISPLAY_TYPE1
-    default 2 if EXAMPLE_DISPLAY_TYPE2
-    default 3 if EXAMPLE_DISPLAY_TYPE3
-
     choice
-        prompt "TFT Display Type"
-        default EXAMPLE_DISPLAY_TYPE0
+        prompt "Device Type"
+        default DEVICE_TYPE_ESP_32S
         help
-            Specifies the type of TFT display attached to the device. 
+            Specifies the type of ESP32 device. 
     
-        config EXAMPLE_DISPLAY_TYPE0
-            bool "None"
-        config EXAMPLE_DISPLAY_TYPE1
-            bool "ESP-WROVER-KIT Display"
-        config EXAMPLE_DISPLAY_TYPE2
-            bool "Adafruit TFT Feather display"
-        config EXAMPLE_DISPLAY_TYPE3
-            bool "M5Stack TFT display"
+        config DEVICE_TYPE_ESP_32S
+            bool "ESP-32S"
+        config DEVICE_TYPE_M5STACK
+            bool "M5Stack"
     endchoice
+    
+    # NOTE: This config is not displayed as a input in the Kconfig menu, as its value is
+    # entirely derived from the Device Type choice.  However the CONFIG_EXAMPLE_DISPLAY_TYPE
+    # define that is produced is needed to configure the TFT library correctly.
 
-config FACTORY_RESET_BUTTON_DURATION
-    int "Factory Reset Button Duration (ms)"
-    range 0 65535
-    default 5000
-    help
-        The amount of time (in milliseconds) that the user must press the attention
-        button to initiate a factory reset.
+    config EXAMPLE_DISPLAY_TYPE
+        int
+        range 0 3
+        default 0 if DEVICE_TYPE_ESP_32S
+        default 3 if DEVICE_TYPE_M5STACK
+
+    config FACTORY_RESET_BUTTON_DURATION
+        int "Factory Reset Button Duration (ms)"
+        range 0 65535
+        default 5000
+        help
+            The amount of time (in milliseconds) that the user must press the attention
+            button to initiate a factory reset.
 
 endmenu

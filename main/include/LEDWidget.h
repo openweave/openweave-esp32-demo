@@ -16,27 +16,28 @@
  *    limitations under the License.
  */
 
-#ifndef PAIRING_WIDGET_H
-#define PAIRING_WIDGET_H
+#ifndef LED_WIDGET_H
+#define LED_WIDGET_H
 
-#include "Display.h"
+#include "driver/gpio.h"
 
-#if CONFIG_HAVE_DISPLAY
-
-class PairingWidget
+class LEDWidget
 {
 public:
-    color_t QRCodeColor;
-    color_t PairingCodeColor;
-    uint16_t VMargin;
-
-    void Init();
-    void Display();
+    void Init(gpio_num_t gpioNum);
+    void Set(bool state);
+    void Blink(uint32_t changeRateMS);
+    void Blink(uint32_t onTimeMS, uint32_t offTimeMS);
+    void Animate();
 
 private:
-    WEAVE_ERROR GetQRCodeString(char *& qrCodeStr);
+    int64_t mLastChangeTimeUS;
+    uint32_t mBlinkOnTimeMS;
+    uint32_t mBlinkOffTimeMS;
+    gpio_num_t mGPIONum;
+    bool mState;
+
+    void DoSet(bool state);
 };
 
-#endif // CONFIG_HAVE_DISPLAY
-
-#endif // PAIRING_WIDGET_H
+#endif // TITLE_WIDGET_H

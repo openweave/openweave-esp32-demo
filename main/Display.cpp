@@ -23,13 +23,12 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 
-#if CONFIG_EXAMPLE_DISPLAY_TYPE != 0
-
 #include "Display.h"
+
+#if CONFIG_HAVE_DISPLAY
 
 extern const char *TAG;
 
-bool HaveDisplay = false;
 uint16_t DisplayHeight = 0;
 uint16_t DisplayWidth = 0;
 
@@ -90,7 +89,6 @@ esp_err_t InitDisplay()
     TFT_setFont(DEJAVU24_FONT, NULL);
     TFT_resetclipwin();
 
-    HaveDisplay = true;
     DisplayWidth = (uint16_t)(1 + dispWin.x2 - dispWin.x1);
     DisplayHeight = (uint16_t)(1 + dispWin.y2 - dispWin.y1);
 
@@ -104,4 +102,4 @@ void ClearDisplay()
     TFT_fillRect(0, 0, (int)DisplayWidth, (int)DisplayHeight, TFT_BLACK);
 }
 
-#endif // CONFIG_EXAMPLE_DISPLAY_TYPE != 0
+#endif // CONFIG_HAVE_DISPLAY

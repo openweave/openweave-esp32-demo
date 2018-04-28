@@ -24,9 +24,10 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 
-#if CONFIG_EXAMPLE_DISPLAY_TYPE != 0
-
 #include "Display.h"
+
+#if CONFIG_HAVE_DISPLAY
+
 #include "StatusIndicatorWidget.h"
 
 extern const char *TAG;
@@ -107,5 +108,5 @@ void StatusIndicatorWidget::DrawIndicator(char indicatorChar, bool state, uint8_
     }
 }
 
-#endif // CONFIG_EXAMPLE_DISPLAY_TYPE != 0
+#endif // CONFIG_HAVE_DISPLAY
 

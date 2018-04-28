@@ -19,7 +19,9 @@
 #ifndef TITLE_WIDGET_H
 #define TITLE_WIDGET_H
 
-#if CONFIG_EXAMPLE_DISPLAY_TYPE != 0
+#include "Display.h"
+
+#if CONFIG_HAVE_DISPLAY
 
 class TitleWidget
 {
@@ -44,8 +46,6 @@ private:
     bool mTitleDisplayed;
 };
 
-#endif // CONFIG_EXAMPLE_DISPLAY_TYPE != 0
+#endif // CONFIG_HAVE_DISPLAY
 
 #endif // TITLE_WIDGET_H
-
-

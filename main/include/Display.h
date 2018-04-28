@@ -21,26 +21,30 @@
 
 #include "esp_system.h"
 
-#if CONFIG_EXAMPLE_DISPLAY_TYPE != 0
+#if CONFIG_DEVICE_TYPE_M5STACK
+
+#define CONFIG_HAVE_DISPLAY 1
+#define CONFIG_EXAMPLE_DISPLAY_TYPE 3
+
+#else // !CONFIG_DEVICE_TYPE_M5STACK
+
+#define CONFIG_HAVE_DISPLAY 0
+
+#endif // !CONFIG_DEVICE_TYPE_M5STACK
+
+#if CONFIG_HAVE_DISPLAY
 
 extern "C" {
 #include "tftspi.h"
 #include "tft.h"
 } // extern "C"
 
-extern bool HaveDisplay;
 extern uint16_t DisplayHeight;
 extern uint16_t DisplayWidth;
 
-#else // #if CONFIG_EXAMPLE_DISPLAY_TYPE == 0
-
-#define HaveDisplay 0
-#define DisplayHeight 0
-#define DisplayWidth 0
-
-#endif // #if CONFIG_EXAMPLE_DISPLAY_TYPE == 0
-
 extern esp_err_t InitDisplay();
 extern void ClearDisplay();
+
+#endif // #if CONFIG_HAVE_DISPLAY
 
 #endif // DISPLAY_H

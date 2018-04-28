@@ -19,7 +19,9 @@
 #ifndef STATUS_INDICATOR_WIDGET_H
 #define STATUS_INDICATOR_WIDGET_H
 
-#if CONFIG_EXAMPLE_DISPLAY_TYPE != 0
+#include "Display.h"
+
+#if CONFIG_HAVE_DISPLAY
 
 class StatusIndicatorWidget
 {
@@ -48,6 +50,6 @@ private:
     void DrawIndicator(char indicatorChar, bool state, uint8_t indicatorPos) const;
 };
 
-#endif // CONFIG_EXAMPLE_DISPLAY_TYPE != 0
+#endif // CONFIG_HAVE_DISPLAY
 
 #endif // STATUS_INDICATOR_WIDGET_H

@@ -24,9 +24,10 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 
-#if CONFIG_EXAMPLE_DISPLAY_TYPE != 0
-
 #include "Display.h"
+
+#if CONFIG_HAVE_DISPLAY
+
 #include "TitleWidget.h"
 
 extern const char *TAG;
@@ -133,4 +134,4 @@ void TitleWidget::Animate()
     }
 }
 
-#endif // CONFIG_EXAMPLE_DISPLAY_TYPE != 0
+#endif // CONFIG_HAVE_DISPLAY
