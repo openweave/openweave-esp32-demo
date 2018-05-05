@@ -102,4 +102,12 @@ void ClearDisplay()
     TFT_fillRect(0, 0, (int)DisplayWidth, (int)DisplayHeight, TFT_BLACK);
 }
 
+void DisplayMessageCentered(const char *msg, uint16_t vpos)
+{
+    uint16_t msgWidth = (uint16_t)TFT_getStringWidth((char *)msg);
+    uint16_t msgX = (DisplayWidth - msgWidth) / 2;
+    uint16_t msgY = (DisplayHeight * vpos) / 100;
+    TFT_print((char *)msg, msgX, msgY);
+}
+
 #endif // CONFIG_HAVE_DISPLAY

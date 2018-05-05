@@ -33,6 +33,7 @@
 #include "TitleWidget.h"
 #include "StatusIndicatorWidget.h"
 #include "PairingWidget.h"
+#include "CountdownWidget.h"
 #include "LEDWidget.h"
 #include "Button.h"
 
@@ -72,13 +73,17 @@ enum DisplayMode
 {
     kDisplayMode_Uninitialized,
     kDisplayMode_StatusScreen,
-    kDisplayMode_PairingScreen
+    kDisplayMode_PairingScreen,
+    kDisplayMode_ResetCountdown,
 };
 
 static DisplayMode displayMode = kDisplayMode_Uninitialized;
 static TitleWidget titleWidget;
 static StatusIndicatorWidget statusIndicator;
 static PairingWidget pairingWidget;
+static CountdownWidget resetCountdownWidget;
+
+static const char *resetMsg = "Reset to defaults in";
 
 #endif // CONFIG_HAVE_DISPLAY
 
@@ -207,6 +212,7 @@ extern "C" void app_main()
     statusIndicator.Char[2] = 'T';
     statusIndicator.Char[3] = 'S';
     statusIndicator.Char[4] = 'A';
+    resetCountdownWidget.Init(3);
 
 #endif // CONFIG_HAVE_DISPLAY
 
@@ -326,6 +332,9 @@ extern "C" void app_main()
         if (attentionButton.IsPressed() &&
             attentionButton.GetStateDuration() > CONFIG_FACTORY_RESET_BUTTON_DURATION)
         {
+#if CONFIG_HAVE_DISPLAY
+            ClearDisplay();
+#endif
             PlatformMgr.LockWeaveStack();
             ConfigurationMgr.InitiateFactoryReset();
             PlatformMgr.UnlockWeaveStack();
@@ -341,6 +350,24 @@ extern "C" void app_main()
         statusIndicator.State[3] = isServiceAlive;
         statusIndicator.State[4] = (haveBLEConnections || isWiFiAPActive);
         statusIndicator.Char[4] = (haveBLEConnections) ? 'B' : 'A';
+
+        // If NOT currently showing the reset countdown screen, and the attention button
+        // has been pressed long enough that the reset time is less than the total
+        // countdown time away, then switch to the countdown screen.
+        if (displayMode != kDisplayMode_ResetCountdown)
+        {
+            if (attentionButton.IsPressed() &&
+                attentionButton.GetStateDuration() + resetCountdownWidget.TotalDurationMS() >= CONFIG_FACTORY_RESET_BUTTON_DURATION)
+            {
+                ClearDisplay();
+                TFT_setFont(DEJAVU24_FONT, NULL);
+                _fg = titleWidget.TitleColor;
+                _bg = TFT_BLACK;
+                DisplayMessageCentered(resetMsg, 25);
+                resetCountdownWidget.Start();
+                displayMode = kDisplayMode_ResetCountdown;
+            }
+        }
 
         // If currently displaying the status screen and the attention button
         // is pressed while the device is not paired to an account, switch to
@@ -374,12 +401,31 @@ extern "C" void app_main()
             }
         }
 
+        // If currently displaying the reset countdown screen and the attention
+        // button is released, switch back to the status screen.
+        else if (displayMode == kDisplayMode_ResetCountdown)
+        {
+            if (!attentionButton.IsPressed())
+            {
+                ClearDisplay();
+                titleWidget.Start();
+                statusIndicator.Display();
+                displayMode = kDisplayMode_StatusScreen;
+            }
+        }
+
         // If displaying the status screen, run the title animation and update
         // the status indicators.
         if (displayMode == kDisplayMode_StatusScreen)
         {
             titleWidget.Animate();
             statusIndicator.Update();
+        }
+
+        // If displaying the reset countdown screen, update the countdown indicators.
+        else if (displayMode == kDisplayMode_ResetCountdown)
+        {
+            resetCountdownWidget.Update();
         }
 
 #endif // CONFIG_HAVE_DISPLAY

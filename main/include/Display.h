@@ -44,6 +44,7 @@ extern uint16_t DisplayWidth;
 
 extern esp_err_t InitDisplay();
 extern void ClearDisplay();
+extern void DisplayMessageCentered(const char *msg, uint16_t vpos);
 
 #endif // #if CONFIG_HAVE_DISPLAY
 

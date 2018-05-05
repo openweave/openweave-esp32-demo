@@ -16,42 +16,41 @@
  *    limitations under the License.
  */
 
-#ifndef STATUS_INDICATOR_WIDGET_H
-#define STATUS_INDICATOR_WIDGET_H
+#ifndef COUNTDOWN_WIDGET_H
+#define COUNTDOWN_WIDGET_H
 
 #include "Display.h"
+#include "StatusIndicatorWidget.h"
 
 #if CONFIG_HAVE_DISPLAY
 
-class StatusIndicatorWidget
+class CountdownWidget : private StatusIndicatorWidget
 {
 public:
     enum
     {
-        kMaxIndicators = 5
+        kMaxIndicators = StatusIndicatorWidget::kMaxIndicators
     };
 
-    color_t Color;
-    uint16_t Size;
-    uint16_t VPos;
-    uint16_t HMargin;
-    char Char[kMaxIndicators];
-    bool State[kMaxIndicators];
+    using StatusIndicatorWidget::Color;
+    using StatusIndicatorWidget::Size;
+    using StatusIndicatorWidget::VPos;
+    using StatusIndicatorWidget::HMargin;
 
-    void Init(uint8_t numIndicators);
-    void Display();
+    void Init(uint8_t numIndicators, uint32_t intervalMS = 1000);
+    void Start(uint32_t elapsedTime = 0);
     void Update();
-
-protected:
-    uint8_t mNumIndicators;
+    bool IsDone();
+    uint32_t TotalDurationMS();
 
 private:
-    char mLastChar[kMaxIndicators];
-    bool mLastState[kMaxIndicators];
+    int64_t mStartTimeUS;
+    uint32_t mIntervalMS;
 
-    void DrawIndicator(char indicatorChar, bool state, uint8_t indicatorPos) const;
+    uint8_t GetElapsedCount();
+    void DrawIndicator(bool state, uint8_t indicatorPos) const;
 };
 
 #endif // CONFIG_HAVE_DISPLAY
 
-#endif // STATUS_INDICATOR_WIDGET_H
+#endif // COUNTDOWN_WIDGET_H
