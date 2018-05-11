@@ -30,4 +30,22 @@ menu "Blue Sky Demo App"
             The amount of time (in milliseconds) that the user must press the attention
             button to initiate a factory reset.
 
+    config ALIVE_INTERVAL
+        int "Alive Interval (ms)"
+        range 0 65535
+        default 5000
+        help
+            Configures the demo application to periodically print an "Alive" message
+            confirming that the Weave thread is alive and processing events.  A value
+            of 0 disables the feature.
+
+    config SERVICE_ECHO_INTERVAL
+        int "Service Echo Interval (ms)"
+        range 0 65535
+        default 0
+        help
+            Configures the demo application to periodically send Weave EchoRequest messages
+            to the Nest service whenever the service tunnel is up.  A value of 0 disables
+            the feature.
+
 endmenu

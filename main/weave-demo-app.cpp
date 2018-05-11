@@ -97,7 +97,7 @@ static bool haveIPv4Connectivity = false;
 static bool isServiceProvisioned = false;
 static bool haveServiceConnectivity = false;
 static bool haveBLEConnections = false;
-static bool isServiceAlive = false;
+static bool isServiceSubscriptionEstablished = false;
 static bool isPairedToAccount = true;
 static volatile bool commissionerDetected = false;
 
@@ -165,22 +165,25 @@ extern "C" void app_main()
     // this function will happen on the Weave event loop thread, not the app_main thread.
     PlatformMgr.AddEventHandler(DeviceEventHandler, 0);
 
+#if CONFIG_ALIVE_INTERVAL
     // Start a Weave-based timer that will print an 'Alive' message on a periodic basis.  This
-    // could be done with an ESP or FreeRTOS timer, but running it on a Weave timer confirms that
-    // the Weave thread is still alive.
-    err = StartAliveTimer(5000);
+    // confirms that the Weave thread is alive and processing events.
+    err = StartAliveTimer(CONFIG_ALIVE_INTERVAL);
     if (err != ESP_OK)
     {
         return;
     }
+#endif // CONFIG_ALIVE_INTERVAL
 
+#if CONFIG_SERVICE_ECHO_INTERVAL
     // Start a Weave echo client that will periodically send Weave Echo requests to the Nest service
-    // whenever service connectivity is established.
-    err = ServiceEcho.Init(10000);
+    // whenever the service tunnel is established.
+    err = ServiceEcho.Init(CONFIG_SERVICE_ECHO_INTERVAL);
     if (err != ESP_OK)
     {
         return;
     }
+#endif // CONFIG_SERVICE_ECHO_INTERVAL
 
     // Initialize the attention button.
     err = attentionButton.Init(ATTENTION_BUTTON_GPIO_NUM, 50);
@@ -204,7 +207,7 @@ extern "C" void app_main()
     }
 
     // Unitialize the UI widgets.
-    titleWidget.Init("Blue Sky Demo");
+    titleWidget.Init("Blue Sky");
     pairingWidget.Init();
     statusIndicator.Init(5);
     statusIndicator.Char[0] = 'W';
@@ -265,14 +268,14 @@ extern "C" void app_main()
             isServiceProvisioned = ConfigurationMgr.IsServiceProvisioned();
             isPairedToAccount = ConfigurationMgr.IsPairedToAccount();
             haveServiceConnectivity = ConnectivityMgr.HaveServiceConnectivity();
-            isServiceAlive = ServiceEcho.ServiceAlive;
+            isServiceSubscriptionEstablished = TraitMgr.IsServiceSubscriptionEstablished();
 
             PlatformMgr.UnlockWeaveStack();
         }
 
         // Consider the system to be "fully connected" if it has IPv4 connectivity, service
         // connectivity and it is able to interact with the service on a regular basis.
-        bool isFullyConnected = (haveIPv4Connectivity && haveServiceConnectivity && isServiceAlive);
+        bool isFullyConnected = (haveIPv4Connectivity && haveServiceConnectivity && isServiceSubscriptionEstablished);
 
         // Update the status LED...
         //
@@ -287,7 +290,7 @@ extern "C" void app_main()
         // BLE connection, in which case blink the LED on for a short period of time.
         //
         if ((isWiFiStationProvisioned && isWiFiStationEnabled && (!isWiFiStationConnected || !haveIPv4Connectivity)) ||
-            (isServiceProvisioned && (!haveServiceConnectivity || !isServiceAlive)))
+            (isServiceProvisioned && (!haveServiceConnectivity || !isServiceSubscriptionEstablished)))
         {
             statusLED.Blink(500);
         }
@@ -347,7 +350,7 @@ extern "C" void app_main()
         statusIndicator.State[0] = isWiFiStationConnected;
         statusIndicator.State[1] = haveIPv4Connectivity;
         statusIndicator.State[2] = haveServiceConnectivity;
-        statusIndicator.State[3] = isServiceAlive;
+        statusIndicator.State[3] = isServiceSubscriptionEstablished;
         statusIndicator.State[4] = (haveBLEConnections || isWiFiAPActive);
         statusIndicator.Char[4] = (haveBLEConnections) ? 'B' : 'A';
 
