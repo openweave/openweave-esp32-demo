@@ -53,6 +53,24 @@ menu "OpenWeave ESP32 Demo"
             The amount of time (in milliseconds) that the user must press the attention
             button to initiate a factory reset.
 
+    config ENABLE_LIGHTING_DEMO_FEATURE
+        bool "Enable Lighting Demo Feature"
+        default true
+        help
+            Enable the lighting control demonstration feature of the demo app.
+
+    config LIGHTING_CONTROLLER_DEVICE_ID
+        hex "Lighting Controller Device Id"
+        default 18B4300000000001
+        depends on ENABLE_LIGHTING_DEMO_FEATURE
+        help
+            Specifies the node id of device that is acting as the lighting controller.
+            
+            When the device boots, if the software detects that the lighting controller
+            device id matches the device's id, then the device initializes itself to act
+            as a lighting controller.  If not, the device initializes itself to act as
+            a remote switch.  
+
     config ALIVE_INTERVAL
         int "Alive Interval (ms)"
         range 0 65535
