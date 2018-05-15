@@ -116,7 +116,7 @@ extern "C" void app_main()
     err = nvs_flash_init();
     if (err != ESP_OK)
     {
-        ESP_LOGE(TAG, "nvs_flash_init() failed: %s", esp_err_to_name(err));
+        ESP_LOGE(TAG, "nvs_flash_init() failed: %s", ErrorStr(err));
         return;
     }
 
@@ -136,7 +136,7 @@ extern "C" void app_main()
     err = esp_event_loop_init(PlatformManager::HandleESPSystemEvent, NULL);
     if (err != ESP_OK)
     {
-        ESP_LOGE(TAG, "esp_event_loop_init() failed: %s", esp_err_to_name(err));
+        ESP_LOGE(TAG, "esp_event_loop_init() failed: %s", ErrorStr(err));
         return;
     }
 
@@ -145,7 +145,7 @@ extern "C" void app_main()
     err = esp_wifi_init(&cfg);
     if (err != ESP_OK)
     {
-        ESP_LOGE(TAG, "esp_event_loop_init() failed: %s", esp_err_to_name(err));
+        ESP_LOGE(TAG, "esp_event_loop_init() failed: %s", ErrorStr(err));
         return;
     }
 
@@ -189,7 +189,7 @@ extern "C" void app_main()
     err = attentionButton.Init(ATTENTION_BUTTON_GPIO_NUM, 50);
     if (err != ESP_OK)
     {
-        ESP_LOGE(TAG, "Button.Init() failed: %s", esp_err_to_name(err));
+        ESP_LOGE(TAG, "Button.Init() failed: %s", ErrorStr(err));
         return;
     }
 
@@ -202,7 +202,7 @@ extern "C" void app_main()
     err = InitDisplay();
     if (err != ESP_OK)
     {
-        ESP_LOGE(TAG, "InitDisplay() failed: %s", esp_err_to_name(err));
+        ESP_LOGE(TAG, "InitDisplay() failed: %s", ErrorStr(err));
         return;
     }
 
