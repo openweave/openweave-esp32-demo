@@ -2,12 +2,15 @@ menu "Blue Sky Demo App"
 
     choice
         prompt "Device Type"
-        default DEVICE_TYPE_ESP_32S
+        default DEVICE_TYPE_ESP32_DEVKITC
         help
-            Specifies the type of ESP32 device. 
-    
-        config DEVICE_TYPE_ESP_32S
-            bool "ESP-32S"
+            Specifies the type of ESP32 device.
+            
+            Note that the "ESP32-DevKitC" choice is compatible with a number of clone devices
+            available from third-party manufacturers.
+            
+        config DEVICE_TYPE_ESP32_DEVKITC
+            bool "ESP32-DevKitC"
         config DEVICE_TYPE_M5STACK
             bool "M5Stack"
     endchoice
@@ -19,7 +22,7 @@ menu "Blue Sky Demo App"
     config EXAMPLE_DISPLAY_TYPE
         int
         range 0 3
-        default 0 if DEVICE_TYPE_ESP_32S
+        default 0 if DEVICE_TYPE_ESP32_DEVKITC
         default 3 if DEVICE_TYPE_M5STACK
 
     config FACTORY_RESET_BUTTON_DURATION

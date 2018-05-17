@@ -46,25 +46,19 @@ const char * TAG = "demo-app";
 
 #if CONFIG_DEVICE_TYPE_M5STACK
 
-// Use the right button (button "C") as the attention button on M5Stack
-#define ATTENTION_BUTTON_GPIO_NUM GPIO_NUM_37
+#define ATTENTION_BUTTON_GPIO_NUM GPIO_NUM_37               // Use the right button (button "C") as the attention button on M5Stack
+#define STATUS_LED_GPIO_NUM GPIO_NUM_MAX                    // No status LED on M5Stack
 
-// No status LED on M5Stack
-#define STATUS_LED_GPIO_NUM GPIO_NUM_MAX
+#elif CONFIG_DEVICE_TYPE_ESP32_DEVKITC
 
-#elif CONFIG_DEVICE_TYPE_ESP_32S
+#define ATTENTION_BUTTON_GPIO_NUM GPIO_NUM_0                // Use the IO0 button as the attention button on ESP32-DevKitC and compatibles.
+#define STATUS_LED_GPIO_NUM GPIO_NUM_2                      // Use LED1 (blue LED) as status LED on ESP32-DevKitC
 
-// Use the IO0 button as the attention button on ESP-32S
-#define ATTENTION_BUTTON_GPIO_NUM GPIO_NUM_0
-
-// Use LED1 (blue LED) as status LED on ESP-32S
-#define STATUS_LED_GPIO_NUM GPIO_NUM_2
-
-#else // !CONFIG_DEVICE_TYPE_ESP_32S
+#else // !CONFIG_DEVICE_TYPE_ESP32_DEVKITC
 
 #error "Unsupported device type selected"
 
-#endif // !CONFIG_DEVICE_TYPE_ESP_32S
+#endif // !CONFIG_DEVICE_TYPE_ESP32_DEVKITC
 
 
 #if CONFIG_HAVE_DISPLAY
