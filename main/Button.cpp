@@ -20,7 +20,7 @@
 #include "esp_log.h"
 #include "driver/gpio.h"
 
-#include <WeaveDevice.h>
+#include <Weave/DeviceLayer/WeaveDeviceLayer.h>
 #include "Button.h"
 
 extern const char * TAG;

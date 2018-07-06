@@ -16,6 +16,11 @@
  *    limitations under the License.
  */
 
+/*
+ *   Description:
+ *     OpenWeave ESP32 demo application.
+ */
+
 #include "esp_system.h"
 #include "esp_wifi.h"
 #include "esp_event_loop.h"
@@ -24,7 +29,7 @@
 #include "esp_heap_caps_init.h"
 #include <new>
 
-#include <WeaveDevice.h>
+#include <Weave/DeviceLayer/WeaveDeviceLayer.h>
 #include <Weave/Support/ErrorStr.h>
 
 #include "AliveTimer.h"
@@ -40,9 +45,9 @@
 using namespace ::nl;
 using namespace ::nl::Inet;
 using namespace ::nl::Weave;
-using namespace ::nl::Weave::Device;
+using namespace ::nl::Weave::DeviceLayer;
 
-const char * TAG = "demo-app";
+const char * TAG = "openweave-demo";
 
 #if CONFIG_DEVICE_TYPE_M5STACK
 
@@ -108,7 +113,7 @@ extern "C" void app_main()
 
     // Initialize the ESP NVS layer.
     err = nvs_flash_init();
-    if (err != ESP_OK)
+    if (err != WEAVE_NO_ERROR)
     {
         ESP_LOGE(TAG, "nvs_flash_init() failed: %s", ErrorStr(err));
         return;
@@ -117,18 +122,18 @@ extern "C" void app_main()
     // Initialize locks in the Weave Device code.  This must be done before the ESP
     // tcpip_adapter layer is initialized.
     err = PlatformMgr.InitLocks();
-    if (err != ESP_OK)
+    if (err != WEAVE_NO_ERROR)
     {
         ESP_LOGE(TAG, "PlatformMgr.InitLocks() failed: %s", ErrorStr(err));
         return;
     }
 
-    // Initialize the ESL tcpip adapter.
+    // Initialize the ESP tcpip adapter.
     tcpip_adapter_init();
 
     // Arrange for the ESP event loop to deliver events into the Weave Device layer.
     err = esp_event_loop_init(PlatformManager::HandleESPSystemEvent, NULL);
-    if (err != ESP_OK)
+    if (err != WEAVE_NO_ERROR)
     {
         ESP_LOGE(TAG, "esp_event_loop_init() failed: %s", ErrorStr(err));
         return;
@@ -137,7 +142,7 @@ extern "C" void app_main()
     // Initialize the ESP WiFi layer.
     wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
     err = esp_wifi_init(&cfg);
-    if (err != ESP_OK)
+    if (err != WEAVE_NO_ERROR)
     {
         ESP_LOGE(TAG, "esp_event_loop_init() failed: %s", ErrorStr(err));
         return;
@@ -145,7 +150,7 @@ extern "C" void app_main()
 
     // Initialize the Weave stack.
     err = PlatformMgr.InitWeaveStack();
-    if (err != ESP_OK)
+    if (err != WEAVE_NO_ERROR)
     {
         ESP_LOGE(TAG, "PlatformMgr.InitWeaveStack() failed: %s", ErrorStr(err));
         return;
@@ -163,7 +168,7 @@ extern "C" void app_main()
     // Start a Weave-based timer that will print an 'Alive' message on a periodic basis.  This
     // confirms that the Weave thread is alive and processing events.
     err = StartAliveTimer(CONFIG_ALIVE_INTERVAL);
-    if (err != ESP_OK)
+    if (err != WEAVE_NO_ERROR)
     {
         return;
     }
@@ -173,7 +178,7 @@ extern "C" void app_main()
     // Start a Weave echo client that will periodically send Weave Echo requests to the Nest service
     // whenever the service tunnel is established.
     err = ServiceEcho.Init(CONFIG_SERVICE_ECHO_INTERVAL);
-    if (err != ESP_OK)
+    if (err != WEAVE_NO_ERROR)
     {
         return;
     }
@@ -181,7 +186,7 @@ extern "C" void app_main()
 
     // Initialize the attention button.
     err = attentionButton.Init(ATTENTION_BUTTON_GPIO_NUM, 50);
-    if (err != ESP_OK)
+    if (err != WEAVE_NO_ERROR)
     {
         ESP_LOGE(TAG, "Button.Init() failed: %s", ErrorStr(err));
         return;
@@ -200,7 +205,7 @@ extern "C" void app_main()
         return;
     }
 
-    // Unitialize the UI widgets.
+    // Initialize the UI widgets.
     titleWidget.Init("Blue Sky");
     pairingWidget.Init();
     statusIndicator.Init(5);
@@ -237,7 +242,7 @@ extern "C" void app_main()
 
     // Start a task to run the Weave Device event loop.
     err = PlatformMgr.StartEventLoopTask();
-    if (err != ESP_OK)
+    if (err != WEAVE_NO_ERROR)
     {
         ESP_LOGE(TAG, "PlatformMgr.StartEventLoopTask() failed: %s", ErrorStr(err));
         return;
@@ -273,15 +278,17 @@ extern "C" void app_main()
 
         // Update the status LED...
         //
-        // If the WiFi station interface is provisioned and enabled, but the system doesn't have WiFi/Internet connectivity,
-        // OR if the system is service provisioned, but not yet able to talk to the service,
-        // THEN blink the LED at an even 500ms rate to single the system is in the process of establishing connectivity.
+        // If the WiFi station interface is provisioned and enabled, but the system doesn't have
+        // WiFi/Internet connectivity, OR if the system is service provisioned, but not yet able
+        // to talk to the service, THEN blink the LED at an even 500ms rate to signal the system
+        // is in the process of establishing connectivity.
         //
-        // If the system is "fully connected" then turn the LED on, UNLESS the AP is enabled, or there is a BLE connection,
-        // in which case blink the LED off for a short period of time.
+        // If the system is "fully connected" then turn the LED on, UNLESS the AP is enabled, or
+        // there is a BLE connection, in which case blink the LED off for a short period of time.
         //
-        // Finally, if the system is not "fully connected" then turn the LED off, UNLESS the AP is enabled, or there is a
-        // BLE connection, in which case blink the LED on for a short period of time.
+        // Finally, if the system is not "fully connected" then turn the LED off, UNLESS the AP is
+        // enabled, or there is a BLE connection, in which case blink the LED on for a short period
+        // of time.
         //
         if ((isWiFiStationProvisioned && isWiFiStationEnabled && (!isWiFiStationConnected || !haveIPv4Connectivity)) ||
             (isServiceProvisioned && (!haveServiceConnectivity || !isServiceSubscriptionEstablished)))

@@ -23,7 +23,7 @@
 
 #include "qrcode.h"
 
-#include <WeaveDevice.h>
+#include <Weave/DeviceLayer/WeaveDeviceLayer.h>
 #include <Weave/Profiles/device-description/DeviceDescription.h>
 
 #include "Display.h"
@@ -34,7 +34,7 @@
 extern const char * TAG;
 
 using namespace ::nl;
-using namespace ::nl::Weave::Device;
+using namespace ::nl::Weave::DeviceLayer;
 using namespace ::nl::Weave::Profiles::DeviceDescription;
 
 enum

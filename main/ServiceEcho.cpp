@@ -19,13 +19,13 @@
 #include "esp_system.h"
 #include "esp_log.h"
 
-#include <WeaveDevice.h>
+#include <Weave/DeviceLayer/WeaveDeviceLayer.h>
 #include "ServiceEcho.h"
 
 using namespace ::nl;
 using namespace ::nl::Inet;
 using namespace ::nl::Weave;
-using namespace ::nl::Weave::Device;
+using namespace ::nl::Weave::DeviceLayer;
 
 using ::nl::Weave::Profiles::Echo_Next::WeaveEchoClient;
 
@@ -114,7 +114,7 @@ WEAVE_ERROR ServiceEchoClient::Init(uint32_t intervalMS)
     WEAVE_ERROR err;
     Binding * binding;
 
-    binding = ::nl::Weave::Device::ExchangeMgr.NewBinding(EchoBindingEventHandler, NULL);
+    binding = ::nl::Weave::DeviceLayer::ExchangeMgr.NewBinding(EchoBindingEventHandler, NULL);
     VerifyOrExit(binding != NULL, err = WEAVE_ERROR_NO_MEMORY);
 
     err = WeaveEchoClient::Init(binding, EchoClientEventHandler, NULL);

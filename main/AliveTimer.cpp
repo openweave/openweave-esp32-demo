@@ -21,13 +21,13 @@
 #include "esp_heap_caps_init.h"
 #include <new>
 
-#include <WeaveDevice.h>
+#include <Weave/DeviceLayer/WeaveDeviceLayer.h>
 #include <Weave/Support/ErrorStr.h>
 
 using namespace ::nl;
 using namespace ::nl::Inet;
 using namespace ::nl::Weave;
-using namespace ::nl::Weave::Device;
+using namespace ::nl::Weave::DeviceLayer;
 
 extern const char * TAG;
 

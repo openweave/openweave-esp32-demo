@@ -15,7 +15,7 @@
 #    limitations under the License.
 #
 #    Description:
-#      Component makefile for the Weave demo application.
+#      Component makefile for the OpenWeave ESP32 demo application.
 #
 
-COMPONENT_DEPENDS			:= weave weave-device tft spidriver
+COMPONENT_DEPENDS			:= openweave tft spidriver
