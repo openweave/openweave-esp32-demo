@@ -18,6 +18,7 @@
 
 #include "esp_system.h"
 #include "esp_log.h"
+#include "driver/ledc.h"
 
 #include <Weave/DeviceLayer/WeaveDeviceLayer.h>
 #include <LightController.h>
@@ -30,6 +31,13 @@ using namespace ::Schema::Nest::Trait::Lighting;
 
 extern const char * TAG;
 
+#define DIMMER_SPEED_MODE LEDC_HIGH_SPEED_MODE
+#define DIMMER_TIMER_NUM LEDC_TIMER_0
+#define DIMMER_CHANNEL_NUM LEDC_CHANNEL_0
+#define DIMMER_FREQ 128
+#define DIMMER_RESOLUTION LEDC_TIMER_10_BIT
+#define DIMMER_DUTY_CYCLE_MAX_VALUE ((1u << LEDC_TIMER_10_BIT) - 1)
+
 LightController::LightController(void)
     : mStateDS(*this), mControlDS(*this)
 {
@@ -41,6 +49,10 @@ LightController::LightController(void)
 WEAVE_ERROR LightController::Init(gpio_num_t gpioNum)
 {
     WEAVE_ERROR err;
+    ledc_timer_config_t dimmerTimerConfig;
+    ledc_channel_config_t dimmerChanConfig;
+
+    VerifyOrExit(gpioNum < GPIO_NUM_MAX, err = WEAVE_ERROR_INVALID_ARGUMENT);
 
     // Publish the LogicalCircuitStateTrait for the light.
     err = TraitMgr.PublishTrait(0, &mStateDS);
@@ -56,23 +68,48 @@ WEAVE_ERROR LightController::Init(gpio_num_t gpioNum)
 
     if (gpioNum < GPIO_NUM_MAX)
     {
-        gpio_set_direction(gpioNum, GPIO_MODE_OUTPUT);
+        memset(&dimmerTimerConfig, 0, sizeof(dimmerTimerConfig));
+        dimmerTimerConfig.duty_resolution = LEDC_TIMER_10_BIT;
+        dimmerTimerConfig.freq_hz = DIMMER_FREQ;
+        dimmerTimerConfig.speed_mode = LEDC_HIGH_SPEED_MODE;
+        dimmerTimerConfig.timer_num = LEDC_TIMER_0;
+        err = ledc_timer_config(&dimmerTimerConfig);
+        SuccessOrExit(err);
+
+        memset(&dimmerChanConfig, 0, sizeof(dimmerChanConfig));
+        dimmerChanConfig.channel = LEDC_CHANNEL_0;
+        dimmerChanConfig.duty = 0;
+        dimmerChanConfig.gpio_num = gpioNum;
+        dimmerChanConfig.speed_mode = LEDC_HIGH_SPEED_MODE;
+        dimmerChanConfig.timer_sel = LEDC_TIMER_0;
+        err = ledc_channel_config(&dimmerChanConfig);
+        SuccessOrExit(err);
     }
 
 exit:
     return err;
 }
 
+void LightController::GetState(uint8_t & state, uint8_t & brightness)
+{
+    state = mState;
+    brightness = mBrightness;
+}
 
 void LightController::ChangeState(uint8_t state, uint8_t brightness)
 {
+    uint32_t dimmerDutyCycle = 0;
+
     mState = state;
     mBrightness = brightness;
     if (mGPIONum < GPIO_NUM_MAX)
     {
-        gpio_set_level(mGPIONum, (state == ON) ? 1 : 0);
+        dimmerDutyCycle = (state == ON) ? (DIMMER_DUTY_CYCLE_MAX_VALUE * brightness * 2 + 1) / 200 : 0;
+        ledc_set_duty(DIMMER_SPEED_MODE, DIMMER_CHANNEL_NUM, dimmerDutyCycle);
+        ledc_update_duty(DIMMER_SPEED_MODE, DIMMER_CHANNEL_NUM);
     }
-    ESP_LOGI(TAG, "Light state changed to %s, level %" PRIu8, (mState == ON) ? "ON" : "OFF", mBrightness);
+    ESP_LOGI(TAG, "Light state changed to %s, level %" PRIu8 " (pwm %" PRIu32 "/%" PRIu32 ")",
+             (mState == ON) ? "ON" : "OFF", mBrightness, dimmerDutyCycle, DIMMER_DUTY_CYCLE_MAX_VALUE);
     mStateDS.SetDirty(LogicalCircuitStateTrait::kPropertyHandle_Root);
 }
 

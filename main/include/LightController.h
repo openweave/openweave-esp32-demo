@@ -43,6 +43,7 @@ public:
 
     WEAVE_ERROR Init(gpio_num_t gpioNum);
 
+    void GetState(uint8_t & state, uint8_t & brightness);
     void ChangeState(uint8_t state, uint8_t brightness);
 
 private:
