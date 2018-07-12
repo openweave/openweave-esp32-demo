@@ -33,8 +33,8 @@ public:
 
     WEAVE_ERROR Init(uint64_t controllerNodeId);
 
-    uint8_t GetCurrentState(void);
-    uint8_t GetCurrentLevel(void);
+    int8_t GetState(void);
+    uint8_t GetLevel(void);
 
     void Set(uint8_t state, uint8_t level);
     void Toggle(void);
@@ -43,7 +43,7 @@ private:
     uint64_t mControllerNodeId;
     ::nl::Weave::Binding * mControllerBinding;
     ::nl::Weave::ExchangeContext * mCommandEC;
-    uint8_t mState;
+    int8_t mState;
     uint8_t mLevel;
     bool mChangePending;
 
@@ -56,12 +56,12 @@ private:
     static void HandleWRMPAckRcvd(::nl::Weave::ExchangeContext *ec, void *msgCtxt);
 };
 
-inline uint8_t LightSwitch::GetCurrentState(void)
+inline int8_t LightSwitch::GetState(void)
 {
     return mState;
 }
 
-inline uint8_t LightSwitch::GetCurrentLevel(void)
+inline uint8_t LightSwitch::GetLevel(void)
 {
     return mLevel;
 }

@@ -42,7 +42,7 @@ LightController::LightController(void)
     : mStateDS(*this), mControlDS(*this)
 {
     mState = OFF;
-    mBrightness = 100;
+    mLevel = 100;
     mGPIONum = GPIO_NUM_MAX;
 }
 
@@ -63,7 +63,7 @@ WEAVE_ERROR LightController::Init(gpio_num_t gpioNum)
     SuccessOrExit(err);
 
     mState = OFF;
-    mBrightness = 100;
+    mLevel = 100;
     mGPIONum = gpioNum;
 
     if (gpioNum < GPIO_NUM_MAX)
@@ -90,27 +90,29 @@ exit:
     return err;
 }
 
-void LightController::GetState(uint8_t & state, uint8_t & brightness)
-{
-    state = mState;
-    brightness = mBrightness;
-}
-
-void LightController::ChangeState(uint8_t state, uint8_t brightness)
+void LightController::Set(int8_t state, uint8_t level)
 {
     uint32_t dimmerDutyCycle = 0;
 
     mState = state;
-    mBrightness = brightness;
+    mLevel = level;
     if (mGPIONum < GPIO_NUM_MAX)
     {
-        dimmerDutyCycle = (state == ON) ? (DIMMER_DUTY_CYCLE_MAX_VALUE * brightness * 2 + 1) / 200 : 0;
+        dimmerDutyCycle = (state == ON) ? (DIMMER_DUTY_CYCLE_MAX_VALUE * level * 2 + 1) / 200 : 0;
         ledc_set_duty(DIMMER_SPEED_MODE, DIMMER_CHANNEL_NUM, dimmerDutyCycle);
         ledc_update_duty(DIMMER_SPEED_MODE, DIMMER_CHANNEL_NUM);
     }
     ESP_LOGI(TAG, "Light state changed to %s, level %" PRIu8 " (pwm %" PRIu32 "/%" PRIu32 ")",
-             (mState == ON) ? "ON" : "OFF", mBrightness, dimmerDutyCycle, DIMMER_DUTY_CYCLE_MAX_VALUE);
+             (mState == ON) ? "ON" : "OFF", mLevel, dimmerDutyCycle, DIMMER_DUTY_CYCLE_MAX_VALUE);
+    mStateDS.Lock();
     mStateDS.SetDirty(LogicalCircuitStateTrait::kPropertyHandle_Root);
+    mStateDS.Unlock();
+    nl::Weave::Profiles::DataManagement::SubscriptionEngine::GetInstance()->GetNotificationEngine()->Run();
+}
+
+void LightController::Toggle(void)
+{
+    Set((mState == ON) ? OFF : ON, mLevel);
 }
 
 LightController::LogicalCircuitStateTraitDataSource::LogicalCircuitStateTraitDataSource(LightController & lightController)
@@ -131,7 +133,7 @@ WEAVE_ERROR LightController::LogicalCircuitStateTraitDataSource::GetLeafData(Pro
         break;
 
     case LogicalCircuitStateTrait::kPropertyHandle_Brightness:
-        err = aWriter.Put(aTagToWrite, mLightController.mBrightness);
+        err = aWriter.Put(aTagToWrite, mLightController.mLevel);
         SuccessOrExit(err);
         break;
 
@@ -162,7 +164,7 @@ void LightController::LogicalCircuitControlTraitDataSource::OnCustomCommand(::nl
         const uint64_t & aMustBeVersion, ::nl::Weave::TLV::TLVReader & aArgumentReader)
 {
     WEAVE_ERROR err = WEAVE_NO_ERROR;
-    uint8_t newState, newBrightness;
+    uint8_t newState, newLevel;
     uint32_t statusProfileId = ::nl::Weave::Profiles::kWeaveProfile_Common;
     uint32_t statusCode = ::nl::Weave::Profiles::Common::kStatus_InternalError;
     bool respSent = false;
@@ -208,25 +210,49 @@ void LightController::LogicalCircuitControlTraitDataSource::OnCustomCommand(::nl
         TLVType container;
         err = aArgumentReader.EnterContainer(container);
         SuccessOrExit(err);
-        err = aArgumentReader.Next(kTLVType_UnsignedInteger, ContextTag(LogicalCircuitControlTrait::kSetLogicalCircuitStateRequestParameter_State));
+
+        err = aArgumentReader.Next();
         SuccessOrExit(err);
-        err = aArgumentReader.Get(newState);
+        VerifyOrExit(aArgumentReader.GetTag() == ContextTag(LogicalCircuitControlTrait::kSetLogicalCircuitStateRequestParameter_State),
+                     (err = WEAVE_ERROR_UNEXPECTED_TLV_ELEMENT, statusCode = ::nl::Weave::Profiles::Common::kStatus_BadRequest));
+        if (aArgumentReader.GetType() == kTLVType_SignedInteger)
+        {
+            err = aArgumentReader.Get(newState);
+            SuccessOrExit(err);
+            VerifyOrExit(newState == PhysicalCircuitStateTrait::CIRCUIT_STATE_ON || newState == PhysicalCircuitStateTrait::CIRCUIT_STATE_OFF,
+                         (err = WEAVE_ERROR_INVALID_ARGUMENT, statusCode = ::nl::Weave::Profiles::Common::kStatus_BadRequest));
+        }
+        else
+        {
+            VerifyOrExit(aArgumentReader.GetType() == kTLVType_Null,
+                         (err = WEAVE_ERROR_WRONG_TLV_TYPE, statusCode = ::nl::Weave::Profiles::Common::kStatus_BadRequest));
+            newState = mLightController.mState;
+        }
+
+        err = aArgumentReader.Next();
         SuccessOrExit(err);
-        err = aArgumentReader.Next(kTLVType_UnsignedInteger, ContextTag(LogicalCircuitControlTrait::kSetLogicalCircuitStateRequestParameter_Level));
-        SuccessOrExit(err);
-        err = aArgumentReader.Get(newBrightness);
-        SuccessOrExit(err);
+        VerifyOrExit(aArgumentReader.GetTag() == ContextTag(LogicalCircuitControlTrait::kSetLogicalCircuitStateRequestParameter_Level),
+                     (err = WEAVE_ERROR_UNEXPECTED_TLV_ELEMENT, statusCode = ::nl::Weave::Profiles::Common::kStatus_BadRequest));
+        if (aArgumentReader.GetType() == kTLVType_UnsignedInteger)
+        {
+            err = aArgumentReader.Get(newLevel);
+            SuccessOrExit(err);
+            VerifyOrExit(newLevel <= 100,
+                         (err = WEAVE_ERROR_INVALID_ARGUMENT, statusCode = ::nl::Weave::Profiles::Common::kStatus_BadRequest));
+        }
+        else
+        {
+            VerifyOrExit(aArgumentReader.GetType() == kTLVType_Null,
+                         (err = WEAVE_ERROR_WRONG_TLV_TYPE, statusCode = ::nl::Weave::Profiles::Common::kStatus_BadRequest));
+            newLevel = mLightController.mLevel;
+        }
+
         err = aArgumentReader.ExitContainer(container);
         SuccessOrExit(err);
     }
 
-    VerifyOrExit(newState == PhysicalCircuitStateTrait::CIRCUIT_STATE_ON || newState == PhysicalCircuitStateTrait::CIRCUIT_STATE_OFF,
-                 (err = WEAVE_ERROR_INVALID_ARGUMENT, statusCode = ::nl::Weave::Profiles::Common::kStatus_BadRequest));
-    VerifyOrExit(newBrightness <= 100,
-                 (err = WEAVE_ERROR_INVALID_ARGUMENT, statusCode = ::nl::Weave::Profiles::Common::kStatus_BadRequest));
-
     // Update the state of the light.
-    mLightController.ChangeState(newState, newBrightness);
+    mLightController.Set(newState, newLevel);
 
     // Send the response.
     err = aCommand->SendResponse(GetVersion(), NULL);

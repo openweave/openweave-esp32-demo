@@ -43,8 +43,11 @@ public:
 
     WEAVE_ERROR Init(gpio_num_t gpioNum);
 
-    void GetState(uint8_t & state, uint8_t & brightness);
-    void ChangeState(uint8_t state, uint8_t brightness);
+    int8_t GetState(void);
+    uint8_t GetLevel(void);
+
+    void Set(int8_t state, uint8_t level);
+    void Toggle(void);
 
 private:
 
@@ -81,8 +84,18 @@ private:
     LogicalCircuitStateTraitDataSource mStateDS;
     LogicalCircuitControlTraitDataSource mControlDS;
     gpio_num_t mGPIONum;
-    uint8_t mState;
-    uint8_t mBrightness;
+    int8_t mState;
+    uint8_t mLevel;
 };
+
+inline int8_t LightController::GetState(void)
+{
+    return mState;
+}
+
+inline uint8_t LightController::GetLevel(void)
+{
+    return mLevel;
+}
 
 #endif // LIGHT_CONTROLLER_H
