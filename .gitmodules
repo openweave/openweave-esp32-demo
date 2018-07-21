@@ -1,0 +1,12 @@
+[submodule "third_party/lwip"]
+	path = third_party/lwip
+	url = https://github.com/openweave/openweave-esp32-lwip.git
+[submodule "third_party/openweave"]
+	path = third_party/openweave
+	url = https://github.com/openweave/openweave-core.git
+[submodule "third_party/ESP32_TFT_library"]
+	path = third_party/ESP32_TFT_library
+	url = https://github.com/loboris/ESP32_TFT_library.git
+[submodule "third_party/QRCode/QRCode"]
+	path = third_party/QRCode/QRCode
+	url = https://github.com/ricmoo/QRCode.git
