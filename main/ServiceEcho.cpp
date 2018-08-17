@@ -86,7 +86,7 @@ void ServiceEchoClient::PlatformEventHandler(const WeaveDeviceEvent * event, int
 {
     WEAVE_ERROR err = WEAVE_NO_ERROR;
 
-    if (event->Type == WeaveDeviceEvent::kEventType_ServiceTunnelStateChange)
+    if (event->Type == DeviceEventType::kServiceTunnelStateChange)
     {
         if (event->ServiceConnectivityChange.Result == kConnectivity_Established)
         {
@@ -120,7 +120,7 @@ WEAVE_ERROR ServiceEchoClient::Init(uint32_t intervalMS)
     err = WeaveEchoClient::Init(binding, EchoClientEventHandler, NULL);
     SuccessOrExit(err);
 
-    err = PlatformMgr.AddEventHandler(PlatformEventHandler);
+    err = PlatformMgr().AddEventHandler(PlatformEventHandler);
     SuccessOrExit(err);
 
     ServiceAlive = false;

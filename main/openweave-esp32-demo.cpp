@@ -119,12 +119,12 @@ extern "C" void app_main()
         return;
     }
 
-    // Initialize locks in the Weave Device code.  This must be done before the ESP
+    // Initialize the LwIP core lock.  This must be done before the ESP
     // tcpip_adapter layer is initialized.
-    err = PlatformMgr.InitLocks();
+    err = PlatformMgrImpl().InitLwIPCoreLock();
     if (err != WEAVE_NO_ERROR)
     {
-        ESP_LOGE(TAG, "PlatformMgr.InitLocks() failed: %s", ErrorStr(err));
+        ESP_LOGE(TAG, "PlatformMgr().InitLocks() failed: %s", ErrorStr(err));
         return;
     }
 
@@ -132,7 +132,7 @@ extern "C" void app_main()
     tcpip_adapter_init();
 
     // Arrange for the ESP event loop to deliver events into the Weave Device layer.
-    err = esp_event_loop_init(PlatformManager::HandleESPSystemEvent, NULL);
+    err = esp_event_loop_init(PlatformManagerImpl::HandleESPSystemEvent, NULL);
     if (err != WEAVE_NO_ERROR)
     {
         ESP_LOGE(TAG, "esp_event_loop_init() failed: %s", ErrorStr(err));
@@ -149,20 +149,20 @@ extern "C" void app_main()
     }
 
     // Initialize the Weave stack.
-    err = PlatformMgr.InitWeaveStack();
+    err = PlatformMgr().InitWeaveStack();
     if (err != WEAVE_NO_ERROR)
     {
-        ESP_LOGE(TAG, "PlatformMgr.InitWeaveStack() failed: %s", ErrorStr(err));
+        ESP_LOGE(TAG, "PlatformMgr().InitWeaveStack() failed: %s", ErrorStr(err));
         return;
     }
 
     // Configure the Weave Connectivity Manager to automatically enable the WiFi AP interface
     // whenever the WiFi station interface has not be configured.
-    ConnectivityMgr.SetWiFiAPMode(ConnectivityManager::kWiFiAPMode_OnDemand_NoStationProvision);
+    ConnectivityMgr().SetWiFiAPMode(ConnectivityManager::kWiFiAPMode_OnDemand_NoStationProvision);
 
     // Register a function to receive events from the Weave device layer.  Note that calls to
     // this function will happen on the Weave event loop thread, not the app_main thread.
-    PlatformMgr.AddEventHandler(DeviceEventHandler, 0);
+    PlatformMgr().AddEventHandler(DeviceEventHandler, 0);
 
 #if CONFIG_ALIVE_INTERVAL
     // Start a Weave-based timer that will print an 'Alive' message on a periodic basis.  This
@@ -241,10 +241,10 @@ extern "C" void app_main()
 #endif // CONFIG_HAVE_DISPLAY
 
     // Start a task to run the Weave Device event loop.
-    err = PlatformMgr.StartEventLoopTask();
+    err = PlatformMgr().StartEventLoopTask();
     if (err != WEAVE_NO_ERROR)
     {
-        ESP_LOGE(TAG, "PlatformMgr.StartEventLoopTask() failed: %s", ErrorStr(err));
+        ESP_LOGE(TAG, "PlatformMgr().StartEventLoopTask() failed: %s", ErrorStr(err));
         return;
     }
 
@@ -256,20 +256,20 @@ extern "C" void app_main()
         // while these values are queried.  However we use a non-blocking lock request
         // (TryLockWeaveStack()) to avoid blocking other UI activities when the Weave
         // task is busy (e.g. with a long crypto operation).
-        if (PlatformMgr.TryLockWeaveStack())
+        if (PlatformMgr().TryLockWeaveStack())
         {
-            isWiFiStationProvisioned = ConnectivityMgr.IsWiFiStationProvisioned();
-            isWiFiStationEnabled = ConnectivityMgr.IsWiFiStationEnabled();
-            isWiFiStationConnected = ConnectivityMgr.IsWiFiStationConnected();
-            isWiFiAPActive = ConnectivityMgr.IsWiFiAPActive();
-            haveBLEConnections = (ConnectivityMgr.NumBLEConnections() != 0);
-            haveIPv4Connectivity = ConnectivityMgr.HaveIPv4InternetConnectivity();
-            isServiceProvisioned = ConfigurationMgr.IsServiceProvisioned();
-            isPairedToAccount = ConfigurationMgr.IsPairedToAccount();
-            haveServiceConnectivity = ConnectivityMgr.HaveServiceConnectivity();
-            isServiceSubscriptionEstablished = TraitMgr.IsServiceSubscriptionEstablished();
+            isWiFiStationProvisioned = ConnectivityMgr().IsWiFiStationProvisioned();
+            isWiFiStationEnabled = ConnectivityMgr().IsWiFiStationEnabled();
+            isWiFiStationConnected = ConnectivityMgr().IsWiFiStationConnected();
+            isWiFiAPActive = ConnectivityMgr().IsWiFiAPActive();
+            haveBLEConnections = (ConnectivityMgr().NumBLEConnections() != 0);
+            haveIPv4Connectivity = ConnectivityMgr().HaveIPv4InternetConnectivity();
+            isServiceProvisioned = ConfigurationMgr().IsServiceProvisioned();
+            isPairedToAccount = ConfigurationMgr().IsPairedToAccount();
+            haveServiceConnectivity = ConnectivityMgr().HaveServiceConnectivity();
+            isServiceSubscriptionEstablished = TraitMgr().IsServiceSubscriptionEstablished();
 
-            PlatformMgr.UnlockWeaveStack();
+            PlatformMgr().UnlockWeaveStack();
         }
 
         // Consider the system to be "fully connected" if it has IPv4 connectivity, service
@@ -325,9 +325,9 @@ extern "C" void app_main()
         (void)attentionButtonPressDetected;
         if (attentionButton.Poll() && !attentionButton.IsPressed())
         {
-            PlatformMgr.LockWeaveStack();
-            ConnectivityMgr.DemandStartWiFiAP();
-            PlatformMgr.UnlockWeaveStack();
+            PlatformMgr().LockWeaveStack();
+            ConnectivityMgr().DemandStartWiFiAP();
+            PlatformMgr().UnlockWeaveStack();
             attentionButtonPressDetected = true;
         }
 
@@ -339,9 +339,9 @@ extern "C" void app_main()
 #if CONFIG_HAVE_DISPLAY
             ClearDisplay();
 #endif
-            PlatformMgr.LockWeaveStack();
-            ConfigurationMgr.InitiateFactoryReset();
-            PlatformMgr.UnlockWeaveStack();
+            PlatformMgr().LockWeaveStack();
+            ConfigurationMgr().InitiateFactoryReset();
+            PlatformMgr().UnlockWeaveStack();
             return;
         }
 
@@ -444,7 +444,7 @@ extern "C" void app_main()
  */
 void DeviceEventHandler(const WeaveDeviceEvent * event, intptr_t arg)
 {
-    if (event->Type == WeaveDeviceEvent::kEventType_SessionEstablished &&
+    if (event->Type == DeviceEventType::kSessionEstablished &&
         event->SessionEstablished.IsCommissioner)
     {
         commissionerDetected = true;

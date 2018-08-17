@@ -132,9 +132,9 @@ WEAVE_ERROR PairingWidget::GetQRCodeString(char *& qrCodeStr)
     qrCodeStr = NULL;
 
     // Get a Weave device descriptor describing the local device.
-    PlatformMgr.LockWeaveStack();
-    err = ConfigurationMgr.GetDeviceDescriptor(deviceDesc);
-    PlatformMgr.UnlockWeaveStack();
+    PlatformMgr().LockWeaveStack();
+    err = ConfigurationMgr().GetDeviceDescriptor(deviceDesc);
+    PlatformMgr().UnlockWeaveStack();
     SuccessOrExit(err);
 
     // The QR code form of a device descriptor contains the pairing code, which
