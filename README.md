@@ -55,7 +55,7 @@ ___
 
 * Clone the demo application repository and fetch the referenced submodules.
 
-        git clone ssh://git@stash.nestlabs.com:7999/user/openweave-esp32-demo.git openweave-esp32-demo
+        git clone git@github.com:openweave/openweave-esp32-demo.git openweave-esp32-demo
         cd openweave-esp32-demo
         git submodule init
         git submodule update
@@ -134,4 +134,4 @@ ___
 
 Documentation for Expressif's ESP-32 development environment can be found here: [ESP-IDF Programming Guide](http://esp-idf.readthedocs.io/en/latest/index.html).
 
-Instructions for building and incorporating OpenWeave into a new ESP32 project can be found here: [Building OpenWeave for the ESP32](https://stash.nestlabs.com/projects/PLATFORM/repos/weave/browse/BUILDING-ESP32.md?at=refs%2Fheads%2Ffeature%2Fblue-sky-openweave).
+Instructions for building and incorporating OpenWeave into a new ESP32 project can be found here: [Building OpenWeave for the ESP32](https://github.com/openweave/openweave-core/blob/master/BUILDING-ESP32.md).
