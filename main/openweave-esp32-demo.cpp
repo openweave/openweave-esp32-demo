@@ -459,7 +459,7 @@ extern "C" void app_main()
             bool onButtonChange = lightSwitchOnButton.Poll();
             bool offButtonChange = lightSwitchOffButton.Poll();
 
-            PlatformMgr.LockWeaveStack();
+            PlatformMgr().LockWeaveStack();
 
             // Prepare new state and level values for the light.
             uint8_t lightState = lightSwitch.GetState();
@@ -530,7 +530,7 @@ extern "C" void app_main()
                 lightSwitch.Set(lightState, lightLevel);
             }
 
-            PlatformMgr.UnlockWeaveStack();
+            PlatformMgr().UnlockWeaveStack();
         }
 
 #endif // CONFIG_ENABLE_LIGHTING_DEMO_FEATURE

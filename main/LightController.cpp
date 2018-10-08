@@ -55,11 +55,11 @@ WEAVE_ERROR LightController::Init(gpio_num_t gpioNum)
     VerifyOrExit(gpioNum < GPIO_NUM_MAX, err = WEAVE_ERROR_INVALID_ARGUMENT);
 
     // Publish the LogicalCircuitStateTrait for the light.
-    err = TraitMgr.PublishTrait(0, &mStateDS);
+    err = TraitMgr().PublishTrait(0, &mStateDS);
     SuccessOrExit(err);
 
     // Publish the LogicalCircuitControlTrait for the light.
-    err = TraitMgr.PublishTrait(0, &mControlDS);
+    err = TraitMgr().PublishTrait(0, &mControlDS);
     SuccessOrExit(err);
 
     mState = OFF;
