@@ -19,7 +19,7 @@ The OpenWeave demo application currently works on two categories of ESP32 device
 
 #### ESP32-DevKitC
 
-![ESP32-DevKitC](https://dl.espressif.com/doc/esp-idf/latest/_images/esp32-devkitc-functional-overview.png)
+![ESP32-DevKitC](https://github.com/espressif/esp-idf/raw/master/docs/_static/esp32-devkitc-functional-overview.jpg)
 
 The ESP32-DevKitC is a small development board containing an ESP-WROOM-32 module plus a power regulator and a Silicon Labs CP2102 USB-to-UART bridge.
 The board provides a USB connector for power and host connectivity, two buttons (one for reset and a second for general input) and two LEDs (power and general output).
