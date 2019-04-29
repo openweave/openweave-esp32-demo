@@ -88,13 +88,13 @@ void ServiceEchoClient::PlatformEventHandler(const WeaveDeviceEvent * event, int
 
     if (event->Type == DeviceEventType::kServiceTunnelStateChange)
     {
-        if (event->ServiceConnectivityChange.Result == kConnectivity_Established)
+        if (event->ServiceTunnelStateChange.Result == kConnectivity_Established)
         {
             ESP_LOGI(TAG, "Starting periodic echos to service");
             err = ServiceEcho.SendRepeating(ServiceEcho.mIntervalMS);
             SuccessOrExit(err);
         }
-        else if (event->ServiceConnectivityChange.Result == kConnectivity_Lost)
+        else if (event->ServiceTunnelStateChange.Result == kConnectivity_Lost)
         {
             ESP_LOGI(TAG, "Stopping periodic echos to service");
             ServiceEcho.Stop();
