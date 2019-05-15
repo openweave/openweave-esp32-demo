@@ -320,13 +320,20 @@ extern "C" void app_main()
         statusLED.Animate();
 
         // Poll the attention button.  Whenever we detect a *release* of the button
-        // demand start the WiFi AP interface.
+        // demand start the WiFi AP interface and place the device in "user selected"
+        // mode.
+        //
+        // While the device is in user selected mode, it will respond to Device
+        // Identify Requests that have the UserSelectedMode flag set.  This makes it
+        // easy for other mobile applications or devices to find it.
+        //
         bool attentionButtonPressDetected = false;
         (void)attentionButtonPressDetected;
         if (attentionButton.Poll() && !attentionButton.IsPressed())
         {
             PlatformMgr().LockWeaveStack();
             ConnectivityMgr().DemandStartWiFiAP();
+            ConnectivityMgr().SetUserSelectedMode(true);
             PlatformMgr().UnlockWeaveStack();
             attentionButtonPressDetected = true;
         }
