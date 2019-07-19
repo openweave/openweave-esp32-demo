@@ -1,0 +1,69 @@
+#
+#    Copyright 2019 Google LLC. All Rights Reserved.
+#
+#    Licensed under the Apache License, Version 2.0 (the "License");
+#    you may not use this file except in compliance with the License.
+#    You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+#    Unless required by applicable law or agreed to in writing, software
+#    distributed under the License is distributed on an "AS IS" BASIS,
+#    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#    See the License for the specific language governing permissions and
+#    limitations under the License.
+#
+
+#
+#    Description:
+#      Travis CI configuration file for the OpenWeave ESP32 Demo application
+#
+
+language: generic
+
+git:
+  submodules: false
+
+before_install:
+  - .travis/prepare.sh
+
+script:
+  - .travis/build.sh
+
+after_success:
+  - .travis/stage_artifacts.sh
+
+language: c++
+
+cache: 
+  directories:
+    cache
+
+matrix:
+  include:
+    - name: "Linux"
+      env: TRAVIS_TAG=true
+    - name: "OS X"
+      os: osx
+
+#
+#   deploy description:
+#      Travis CI supports uploading to Google Cloud Storage (GCS).
+#      openweave gcs bucket location: https://storage.cloud.google.com/openweave"
+#      tags: true: deployment is triggered if and only if $TRAVIS_TAG is set here.
+#      Travis-CI help link: https://docs.travis-ci.com/user/deployment/gcs/
+#
+
+deploy:
+  provider: gcs
+  access_key_id: GOOGNPZYTVTEPZM5VBRAVVUU
+  secret_access_key:
+    secure: c5PssbzFtJg/lMgjWKUWHISkGLcw7K9Fxs+LMchg6+Nl7vn8ZUVdIZaPNrf0fbVxhLulkxaeVuRB+RhX97fRx0W9lAr46UrBSDYZGAEVkFRRWqWGVFKI/imBwxJ+x3rkRXuzh0RpvBjIn+Y/0vJ7NeCEiLRGSfFGxT6b5b18+CJa2XQ0HU9/0Eoivj6g9wlBiN4v76dxHqaMh/nt72wz2OOBpoGOApJ3UTRaDFWpfWYRklDpaFFW8a8AoF4MgyEZ9sDsxr8Egss62m+rGE0906Aul9rm0xSeU19atL0Z3N48uH15CbE4ZrJqwL+WGLMJOE6GsNp5eu7Mode9fhXqHerNTXLUFto7us0OaXb0CumZyLYUIcLlPb7kxLEiZ7MwsHRFvy3+UamDNCTZ2NqaERFEPgtMSN3A+0FE3zPdGyNDW5NTmAujrItXzYRmgtAqzhBEBVCDB3AZcFzJVYji7oJjPjroeaK2CrfF5BvpswdIwGaWR2ox400jgl2sISqnp/iPZD10wELPZz2g3VXlfJMg6yJd80QLeieICwiqCLrJVxjT1bFJUYBBb80b7K+Gu+f1qZwbXJAF8q384e/MuVNRb4mVbM80N2mgn+n4RfZnOLWXbegtc8RBOT2/rttM89PqGMJc5R2clKnrSu7JS82cth7c3/xAElj6/yNZo80=
+  bucket: openweave
+  skip_cleanup: true
+  acl: public-read
+  upload-dir: openweave-esp32-demo/$TRAVIS_BUILD_NUMBER
+  local-dir: "$TRAVIS_BUILD_DIR/build_artifacts"
+  on:
+    repo: openweave/openweave-esp32-demo
+    tags: true
