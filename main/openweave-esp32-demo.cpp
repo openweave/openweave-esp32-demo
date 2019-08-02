@@ -65,6 +65,27 @@ const char * TAG = "openweave-demo";
 
 #endif // !CONFIG_DEVICE_TYPE_ESP32_DEVKITC
 
+namespace nl {
+namespace Weave {
+namespace Profiles {
+namespace DataManagement_Current {
+namespace Platform {
+
+void CriticalSectionEnter(void)
+{
+    return ;
+}
+
+void CriticalSectionExit(void)
+{
+    return ;
+}
+
+} // namespace Platform
+} // namespace DataManagement_Current
+} // namespace Profiles
+} // namespace Weave
+} // namespace nl
 
 #if CONFIG_HAVE_DISPLAY
 
