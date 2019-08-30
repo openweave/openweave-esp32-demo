@@ -55,6 +55,7 @@ COMPONENTS              := app_trace \
                            driver \
                            esp32 \
                            esp_adc_cal \
+                           esp_event \
                            esptool_py \
                            ethernet \
                            expat \
@@ -72,7 +73,9 @@ COMPONENTS              := app_trace \
                            partition_table \
                            pthread \
                            QRCode \
+                           esp_ringbuf \
                            sdmmc \
+                           smartconfig_ack \
                            soc \
                            spidriver \
                            spi_flash \
