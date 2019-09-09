@@ -30,8 +30,8 @@ esp_err_t Button::Init(gpio_num_t gpioNum, uint16_t debouncePeriod)
     esp_err_t err;
 
     mGPIONum = gpioNum;
-    mDebouncePeriod = debouncePeriod;
-    mEffectiveState = false;
+    mDebouncePeriod = debouncePeriod / portTICK_PERIOD_MS;
+    mState = false;
     mLastState = false;
 
     err = gpio_set_direction(gpioNum, GPIO_MODE_INPUT);
@@ -45,7 +45,7 @@ exit:
 
 bool Button::Poll()
 {
-    uint32_t now = xTaskGetTickCount() * portTICK_PERIOD_MS;
+    uint32_t now = xTaskGetTickCount();
 
     bool newState = gpio_get_level(mGPIONum) == 0;
 
@@ -55,9 +55,11 @@ bool Button::Poll()
         mLastReadTime = now;
     }
 
-    else if (newState != mEffectiveState && (now - mLastReadTime) >= mDebouncePeriod)
+    else if (newState != mState && (now - mLastReadTime) >= mDebouncePeriod)
     {
-        mEffectiveState = newState;
+        mState = newState;
+        mPrevStateDur = now - mStateStartTime;
+        mStateStartTime = now;
         return true;
     }
 
@@ -66,6 +68,5 @@ bool Button::Poll()
 
 uint32_t Button::GetStateDuration()
 {
-    uint32_t now = xTaskGetTickCount() * portTICK_PERIOD_MS;
-    return now - mLastReadTime;
+    return (xTaskGetTickCount() - mStateStartTime) * portTICK_PERIOD_MS;
 }

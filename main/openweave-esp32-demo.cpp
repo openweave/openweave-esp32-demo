@@ -41,6 +41,8 @@
 #include "CountdownWidget.h"
 #include "LEDWidget.h"
 #include "Button.h"
+#include "LightController.h"
+#include "LightSwitch.h"
 
 using namespace ::nl;
 using namespace ::nl::Inet;
@@ -53,11 +55,17 @@ const char * TAG = "openweave-demo";
 
 #define ATTENTION_BUTTON_GPIO_NUM GPIO_NUM_37               // Use the right button (button "C") as the attention button on M5Stack
 #define STATUS_LED_GPIO_NUM GPIO_NUM_MAX                    // No status LED on M5Stack
+#define LIGHT_SWITCH_ON_BUTTON_GPIO_NUM GPIO_NUM_39         // Use the left button (button "A") as the light switch ON button on M5Stack
+#define LIGHT_SWITCH_OFF_BUTTON_GPIO_NUM GPIO_NUM_38        // Use the middle button (button "B") as the light switch OFF button on M5Stack
+#define LIGHT_CONTROLLER_OUTPUT_GPIO_NUM GPIO_NUM_2         // Use GPIO2 as the light controller output on M5Stack
 
 #elif CONFIG_DEVICE_TYPE_ESP32_DEVKITC
 
-#define ATTENTION_BUTTON_GPIO_NUM GPIO_NUM_0                // Use the IO0 button as the attention button on ESP32-DevKitC and compatibles.
-#define STATUS_LED_GPIO_NUM GPIO_NUM_2                      // Use LED1 (blue LED) as status LED on ESP32-DevKitC
+#define ATTENTION_BUTTON_GPIO_NUM GPIO_NUM_0                // Use the IO0 button as the attention button on ESP32-DevKitC and compatibles
+#define STATUS_LED_GPIO_NUM GPIO_NUM_2                      // Use LED1 (blue LED) as status LED on DevKitC
+#define LIGHT_SWITCH_ON_BUTTON_GPIO_NUM GPIO_NUM_34         // Use GPIO34 as the light switch ON button input on DevKitC
+#define LIGHT_SWITCH_OFF_BUTTON_GPIO_NUM GPIO_NUM_35        // Use GPIO35 as the light switch OFF button input on DevKitC
+#define LIGHT_CONTROLLER_OUTPUT_GPIO_NUM GPIO_NUM_33        // Use GPIO33 as the light controller output on DevKitC
 
 #else // !CONFIG_DEVICE_TYPE_ESP32_DEVKITC
 
@@ -120,6 +128,25 @@ static bool haveBLEConnections = false;
 static bool isServiceSubscriptionEstablished = false;
 static bool isPairedToAccount = true;
 static volatile bool commissionerDetected = false;
+
+#if CONFIG_ENABLE_LIGHTING_DEMO_FEATURE
+
+static Button lightSwitchOnButton;
+static Button lightSwitchOffButton;
+static LightController lightController;
+static LightSwitch lightSwitch;
+static bool isLightingController;
+
+static enum { None, Up, Down } curDimAction = None;
+static uint8_t dimStartLevel = 0;
+
+#define DIM_START_DELAY 500u        // Amount of time user must hold a button to start the dimming action (in ms)
+#define MAX_DIM_TIME 4000u          // The maximum amount of time required to dim across the entire brightness range (in ms)
+#define DIM_UPDATE_INTERVAL 100u    // The minimum amount of time between commands sent to the light controller while dimming (in ms)
+
+#define TOTAL_DIM_UPDATE_INTERVALS (MAX_DIM_TIME / DIM_UPDATE_INTERVAL)
+
+#endif // CONFIG_ENABLE_LIGHTING_DEMO_FEATURE
 
 static void DeviceEventHandler(const WeaveDeviceEvent * event, intptr_t arg);
 
@@ -215,6 +242,56 @@ extern "C" void app_main()
 
     // Initialize the status LED.
     statusLED.Init(STATUS_LED_GPIO_NUM);
+
+#if CONFIG_ENABLE_LIGHTING_DEMO_FEATURE
+
+    // Determine if we're acting as a lighting controller or switch
+    isLightingController = (::nl::Weave::DeviceLayer::FabricState.LocalNodeId == CONFIG_LIGHTING_CONTROLLER_DEVICE_ID);
+
+    if (isLightingController)
+    {
+        // Initialize the light controller object.
+        err = lightController.Init(LIGHT_CONTROLLER_OUTPUT_GPIO_NUM);
+        if (err != WEAVE_NO_ERROR)
+        {
+            ESP_LOGE(TAG, "LightContoller.Init() failed: %s", nl::ErrorStr(err));
+            return;
+        }
+
+        ESP_LOGI(TAG, "Lighting demo feature enabled: Serving as Light Controller");
+    }
+
+    else
+    {
+        // Initialize the remote light switch object.
+        err = lightSwitch.Init(CONFIG_LIGHTING_CONTROLLER_DEVICE_ID);
+        if (err != WEAVE_NO_ERROR)
+        {
+            ESP_LOGE(TAG, "LightSwitch.Init() failed: %s", nl::ErrorStr(err));
+            return;
+        }
+
+        // Initialize the light switch ON button.
+        err = lightSwitchOnButton.Init(LIGHT_SWITCH_ON_BUTTON_GPIO_NUM, 50);
+        if (err != WEAVE_NO_ERROR)
+        {
+            ESP_LOGE(TAG, "Button.Init() failed: %s", ErrorStr(err));
+            return;
+        }
+
+        // Initialize the light switch OFF button.
+        err = lightSwitchOffButton.Init(LIGHT_SWITCH_OFF_BUTTON_GPIO_NUM, 50);
+        if (err != WEAVE_NO_ERROR)
+        {
+            ESP_LOGE(TAG, "Button.Init() failed: %s", ErrorStr(err));
+            return;
+        }
+
+        ESP_LOGI(TAG, "Lighting demo feature enabled: Serving as Light Switch for controller at %016" PRIX64,
+                 CONFIG_LIGHTING_CONTROLLER_DEVICE_ID);
+    }
+
+#endif // CONFIG_ENABLE_LIGHTING_DEMO_FEATURE
 
 #if CONFIG_HAVE_DISPLAY
 
@@ -372,6 +449,91 @@ extern "C" void app_main()
             PlatformMgr().UnlockWeaveStack();
             return;
         }
+
+#if CONFIG_ENABLE_LIGHTING_DEMO_FEATURE
+
+        // If acting as a remote light switch...
+        if (!isLightingController)
+        {
+            // Poll the state of the light switch buttons.
+            bool onButtonChange = lightSwitchOnButton.Poll();
+            bool offButtonChange = lightSwitchOffButton.Poll();
+
+            PlatformMgr().LockWeaveStack();
+
+            // Prepare new state and level values for the light.
+            uint8_t lightState = lightSwitch.GetState();
+            uint8_t lightLevel = lightSwitch.GetLevel();
+
+            if (onButtonChange)
+            {
+                if (lightSwitchOnButton.IsPressed())
+                {
+                    lightState = LightSwitch::ON;
+                    curDimAction = Up;
+                    dimStartLevel = lightSwitch.GetLevel();
+                }
+                else if (curDimAction == Up)
+                {
+                    curDimAction = None;
+                }
+            }
+            else if (offButtonChange)
+            {
+                if (lightSwitchOffButton.IsPressed())
+                {
+                    curDimAction = Down;
+                    dimStartLevel = lightSwitch.GetLevel();
+                }
+                else
+                {
+                    if (curDimAction == Down)
+                    {
+                        curDimAction = None;
+                    }
+                    if (lightSwitchOffButton.GetPrevStateDuration() <= DIM_START_DELAY)
+                    {
+                        lightState = LightSwitch::OFF;
+                    }
+                }
+            }
+
+            if (curDimAction != None)
+            {
+                uint32_t switchStateDur = (curDimAction == Up)
+                        ? lightSwitchOnButton.GetStateDuration()
+                        : lightSwitchOffButton.GetStateDuration();
+
+                if (switchStateDur > DIM_START_DELAY)
+                {
+                    uint32_t elapsedUpdateIntervals = ((switchStateDur - DIM_START_DELAY) / DIM_UPDATE_INTERVAL) + 1;
+
+                    uint32_t levelDelta = (elapsedUpdateIntervals * 100) / TOTAL_DIM_UPDATE_INTERVALS;
+                    if (levelDelta > 100)
+                    {
+                        levelDelta = 100;
+                    }
+
+                    if (curDimAction == Up)
+                    {
+                        lightLevel = ((100 - levelDelta) > dimStartLevel) ? dimStartLevel + levelDelta : 100;
+                    }
+                    else
+                    {
+                        lightLevel = (levelDelta < dimStartLevel) ? dimStartLevel - levelDelta : 0;
+                    }
+                }
+            }
+
+            if (lightState != lightSwitch.GetState() || lightLevel != lightSwitch.GetLevel())
+            {
+                lightSwitch.Set(lightState, lightLevel);
+            }
+
+            PlatformMgr().UnlockWeaveStack();
+        }
+
+#endif // CONFIG_ENABLE_LIGHTING_DEMO_FEATURE
 
 #if CONFIG_HAVE_DISPLAY
 

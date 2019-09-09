@@ -19,3 +19,4 @@
 #
 
 COMPONENT_DEPENDS			:= openweave tft spidriver
+COMPONENT_SRCDIRS           := . trait-support/nest/trait/lighting

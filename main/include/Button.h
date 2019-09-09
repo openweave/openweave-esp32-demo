@@ -29,19 +29,33 @@ public:
     esp_err_t Init(gpio_num_t gpioNum, uint16_t debouncePeriod);
     bool Poll();
     bool IsPressed();
+    uint32_t GetStateStartTime();
     uint32_t GetStateDuration();
+    uint32_t GetPrevStateDuration();
 
 private:
-    uint32_t mLastReadTime;
+    uint32_t mLastReadTime;     // in ticks
+    uint32_t mStateStartTime;   // in ticks
+    uint32_t mPrevStateDur;     // in ticks
     gpio_num_t mGPIONum;
-    uint16_t mDebouncePeriod;
-    bool mEffectiveState;
+    uint16_t mDebouncePeriod;   // in ticks
+    bool mState;
     bool mLastState;
 };
 
 inline bool Button::IsPressed()
 {
-    return mEffectiveState;
+    return mState;
+}
+
+inline uint32_t Button::GetStateStartTime()
+{
+    return mStateStartTime * portTICK_PERIOD_MS;
+}
+
+inline uint32_t Button::GetPrevStateDuration()
+{
+    return mPrevStateDur * portTICK_PERIOD_MS;
 }
 
 #endif // BUTTON_H
