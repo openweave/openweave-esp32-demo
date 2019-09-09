@@ -1,12 +1,48 @@
+#
+# Some useful defaults for the demo app configuration.
+#
+
+# Enable BLE
 CONFIG_BT_ENABLED=y
 CONFIG_GATTS_ENABLE=y
 CONFIG_GATTC_ENABLE=
 CONFIG_BLE_SMP_ENABLE=
 CONFIG_BT_ACL_CONNECTIONS=2
-CONFIG_WEAVE_TASK_STACK_SIZE=5120
 
+# Use a custom partition table
 CONFIG_PARTITION_TABLE_CUSTOM=y
 CONFIG_PARTITION_TABLE_CUSTOM_FILENAME="partitions.csv"
 CONFIG_PARTITION_TABLE_CUSTOM_APP_BIN_OFFSET=0x10000
 CONFIG_PARTITION_TABLE_FILENAME="partitions.csv"
 CONFIG_APP_OFFSET=0x10000
+
+# Bump the stack size of the Weave task to accommodate extra stack useage due to
+# debugging.
+CONFIG_WEAVE_TASK_STACK_SIZE=5120
+
+# Default to 921600 baud when flashing and monitoring device
+CONFIG_ESPTOOLPY_BAUD_921600B=y
+CONFIG_ESPTOOLPY_BAUD=921600
+CONFIG_ESPTOOLPY_COMPRESSED=y
+CONFIG_MONITOR_BAUD_115200B=y
+CONFIG_MONITOR_BAUD=115200
+
+# Enable various features that make it easier to debug secure Weave communication.
+# WARNING: This option SHOULD NEVER BE ENABLED IN PRODUCTION BUILDS.
+CONFIG_SECURITY_TEST_MODE=y
+
+# Disable authentication checks for various device provisioning operations.
+# WARNING: This option SHOULD NEVER BE ENABLED IN PRODUCTION BUILDS.
+CONFIG_DISABLE_PROVISIONING_AUTH=y
+
+# Print debug information related to certificate validation.
+CONFIG_DEBUG_CERT_VALIDATION=y
+
+# Log the device's provisioning hash at boot.
+CONFIG_LOG_PROVISIONING_HASH=y
+
+# Disable automatic closing of idle incoming connections.  This makes it possible
+# to maintain an idle Weave Device Manager connection with the device for testing
+# purposes.
+CONFIG_DEFAULT_INCOMING_CONNECTION_IDLE_TIMEOUT=0
+
