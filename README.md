@@ -45,34 +45,49 @@ ___
 
 ## Building the Demo Application
 
-* Download and install the Espressif ESP32 IoT Development Framework and the xtensa-esp32-elf toolchain.  Instructions can be found on  Espressif's [Get Started](http://esp-idf.readthedocs.io/en/latest/get-started) page.
+Building the demo application requires the use of the Espressif ESP32 IoT Development Framework and the xtensa-esp32-elf toolchain.
+To install these components and build the application, follow these steps:
 
+* Clone the Expressif ESP-IDF and checkout version 3.0
 
-* Checkout version 3.0 of ESP-IDF
+        $ mkdir ${HOME}/tools
+        $ cd ${HOME}/tools
+        $ git clone https://github.com/espressif/esp-idf.git
+        $ cd esp-idf
+        $ git checkout release/v3.0
+        $ git submodule update --init
 
-        cd <esp-idf-directory>
-        git checkout release/v3.0
+* Download and install the appropriate xtensa ESP32 gnu tool chain (ESP-IDF v3.0 requires tool chain version [1.22.0-80-g6c4433a-5.2.0](https://dl.espressif.com/dl/xtensa-esp32-elf-linux64-1.22.0-80-g6c4433a-5.2.0.tar.gz))
+
+        $ cd ${HOME}/tools
+        $ wget https://dl.espressif.com/dl/xtensa-esp32-elf-linux64-1.22.0-80-g6c4433a-5.2.0.tar.gz
+        $ tar xzvf xtensa-esp32-elf-linux64-1.22.0-80-g6c4433a-5.2.0.tar.gz
 
 * Clone the demo application repository and fetch the referenced submodules.
 
-        git clone git@github.com:openweave/openweave-esp32-demo.git openweave-esp32-demo
-        cd openweave-esp32-demo
-        git submodule init
-        git submodule update
+        $ mkdir ${HOME}/projects
+        $ cd ${HOME}/projects
+        $ git clone https://github.com/openweave/openweave-esp32-demo.git
+        $ cd openweave-esp32-demo
+        $ git submodule update --init
 
-* Within the source directory, create a shell script called `setup.sh` containing the following lines, substituting the paths to the ESP-IDF directory and the xtensa-esp32 toolchain  installed above.
+* Within the demo source directory, create a shell script called `setup.sh` containing paths to the ESP-IDF  and the xtensa toolchain directories created above.
 
         :
-        IDF_PATH=<path-to-esp-idf>
-        ESP32_TOOLS_BIN=<path-to-xtensa-esp32-toolchain>/bin
+        export IDF_PATH=${HOME}/tools/esp-idf
+        export ESP32_TOOLS_BIN=${HOME}/tools/xtensa-esp32-elf/bin
         export PATH=${ESP32_TOOLS_BIN}:${PATH}
-        export IDF_PATH
     
 * Source the setup.sh script
 
-        source setup.sh
+        . setup.sh
 
-* In the root of the  source directory, run `make menuconfig` to configure the following build-time settings for your device:
+* In the root of the  source directory, use the `menuconfig` make target to configure the application.
+
+        $ cd ${HOME}/projects/openweave-esp32-demo
+        $ make menuconfig
+
+ * Within the configuration tool, set the following build-time options for your device:
 
 | _Config Setting_ | _Value_ |
 | ----------------------- | ---------- |
