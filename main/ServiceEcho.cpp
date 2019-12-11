@@ -73,8 +73,8 @@ static void EchoClientEventHandler(void * appState, WeaveEchoClient::EventType e
         ESP_LOGI(TAG, "Timeout waiting for echo response from service");
         ServiceEcho.ServiceAlive = false;
         break;
-    case WeaveEchoClient::kEvent_CommuncationError:
-        ESP_LOGE(TAG, "Communication error sending echo request to service: %s", ErrorStr(inParam.CommuncationError.Reason));
+    case WeaveEchoClient::kEvent_CommunicationError:
+        ESP_LOGE(TAG, "Communication error sending echo request to service: %s", ErrorStr(inParam.CommunicationError.Reason));
         ServiceEcho.ServiceAlive = false;
         break;
     default:
