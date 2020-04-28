@@ -17,8 +17,11 @@ CONFIG_PARTITION_TABLE_FILENAME="partitions.csv"
 CONFIG_APP_OFFSET=0x10000
 
 # Bump the stack size of the Weave task to accommodate extra stack useage due to
-# debugging.
-CONFIG_WEAVE_TASK_STACK_SIZE=5120
+# debugging. When using ESP-IDF3.3, there exists a callpath that when reached
+# DataManagement_Current::PrettyPrintWDM, ~4400B stack space is used (default
+# stack size is 4608B). And then vsnprintf called by PerttyPrintWDM will cost
+# another 1KB, a 5120B stack space in previous versions will overflow.
+CONFIG_WEAVE_TASK_STACK_SIZE=6144
 
 # Default to 921600 baud when flashing and monitoring device
 CONFIG_ESPTOOLPY_BAUD_921600B=y
@@ -46,3 +49,6 @@ CONFIG_LOG_PROVISIONING_HASH=y
 # purposes.
 CONFIG_DEFAULT_INCOMING_CONNECTION_IDLE_TIMEOUT=0
 
+# According to partitions.csv, we need 4MB or larger flash
+CONFIG_ESPTOOLPY_FLASHSIZE_4MB=y
+CONFIG_ESPTOOLPY_FLASHSIZE="4MB"

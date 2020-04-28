@@ -53,8 +53,12 @@ COMPONENTS              := app_trace \
                            console \
                            cxx \
                            driver \
+                           efuse \
                            esp32 \
                            esp_adc_cal \
+                           esp_event \
+                           esp_ringbuf \
+                           espcoredump \
                            esptool_py \
                            ethernet \
                            expat \
@@ -73,6 +77,7 @@ COMPONENTS              := app_trace \
                            pthread \
                            QRCode \
                            sdmmc \
+                           smartconfig_ack \
                            soc \
                            spidriver \
                            spi_flash \
