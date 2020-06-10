@@ -47,7 +47,7 @@ HASH_CMD="shasum -a 256"
 # Install dependencies
 # --------------------------------------------------------------------------------
 
-ESP_IDF_VERSION=v3.0.4
+ESP_IDF_VERSION=release/v3.3
 if test "${TRAVIS_OS_NAME}" = "linux"; then
     XTENSA_TOOL_CHAIN_URL=https://dl.espressif.com/dl/xtensa-esp32-elf-linux64-1.22.0-80-g6c4433a-5.2.0.tar.gz
     XTENSA_TOOL_CHAIN_HASH=3fe96c151d46c1d4e5edc6ed690851b8e53634041114bad04729bc16b0445156
@@ -96,6 +96,11 @@ git -C ${TRAVIS_BUILD_DIR} submodule init || exit 1
 git -C ${TRAVIS_BUILD_DIR} submodule update || exit 1
 
 set +x
+
+# --------------------------------------------------------------------------------
+# Prepare python
+# --------------------------------------------------------------------------------
+python -m pip install --user -r ${TRAVIS_BUILD_DIR}/esp-idf/requirements.txt
 
 
 # --------------------------------------------------------------------------------
